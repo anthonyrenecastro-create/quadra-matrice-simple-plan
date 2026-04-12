@@ -1,0 +1,30 @@
+{
+  "baseline": {
+    "dataset": "wikitext-2-raw-v1",
+    "hardware_mode": "cpu",
+    "batch_count": 50,
+    "mode": "baseline",
+    "variance_threshold": 0.1,
+    "noise_intensity": 0.15,
+    "snn_epochs": 3
+  },
+  "hard": {
+    "dataset": "wikitext-103-raw-v1",
+    "hardware_mode": "cpu",
+    "batch_count": 150,
+    "mode": "hard",
+    "variance_threshold": 0.14,
+    "noise_intensity": 0.25,
+    "snn_epochs": 6
+  },
+  "ablation": {
+    "dataset": "wikitext-2-raw-v1",
+    "hardware_mode": "cpu",
+    "batch_count": 80,
+    "mode": "ablation",
+    "variance_threshold": 0.18,
+    "noise_intensity": 0.2,
+    "snn_epochs": 4,
+    "lorenz_enabled": false
+  }
+}
