@@ -241,6 +241,47 @@ class TestStatefulInterpreter:
         assert final_size >= initial_size, "Context window should accumulate"
         print(f"✓ Context window grew: {initial_size} → {final_size}")
 
+    @pytest.mark.asyncio
+    async def test_messy_input_normalization(self, interpreter):
+        """Test robust handling of messy text/concept payloads."""
+
+        result = await interpreter.process({
+            'text': '  QUANTUM\x00\x01   coherence\n\nacross\tfields   ',
+            'concepts': 'quantum, coherence; fields | transfer',
+            'mode': 'coding',
+        })
+
+        assert 'generation_mode' in result
+        assert result['generation_mode'] == 'coding'
+        assert 'field_cross_reference' in result
+        assert result['field_cross_reference']['winning_field']
+        assert isinstance(result.get('symbolic_result', ''), str)
+        assert len(result.get('symbolic_result', '')) > 0
+
+    @pytest.mark.asyncio
+    async def test_cross_reference_generation_outputs(self, interpreter):
+        """Test cross-field generation payload and neural core summary."""
+
+        # Build some concept history for the neural core summary.
+        await interpreter.process({'text': 'reasoning over energy systems', 'concepts': ['reasoning', 'energy']})
+        await interpreter.process({'text': 'tool-assisted synthesis', 'concepts': ['tool', 'synthesis']})
+
+        result = await interpreter.process({
+            'text': 'create a robust plan for cross-domain reasoning',
+            'concepts': ['cross-domain', 'reasoning', 'planning'],
+            'mode': 'tool_use',
+        })
+
+        cross_ref = result.get('field_cross_reference', {})
+        neural_core = result.get('neural_core', {})
+
+        assert result.get('generation_mode') == 'tool_use'
+        assert 'scores' in cross_ref and isinstance(cross_ref['scores'], dict)
+        assert len(cross_ref['scores']) >= 3
+        assert 'consensus_score' in cross_ref
+        assert 'world_knowledge_seed' in neural_core
+        assert isinstance(neural_core['world_knowledge_seed'], list)
+
 
 class TestGovernancePolicy:
     """Test governance policy evaluation."""

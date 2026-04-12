@@ -15,6 +15,7 @@ Maintains state across requests via MemoryStore for true adaptive intelligence.
 """
 
 import logging
+import re
 import numpy as np
 import torch
 import torch.nn as nn
@@ -40,11 +41,22 @@ class InputEncoder:
     
     def encode_text(self, text: str) -> np.ndarray:
         """Semantic encoding: weight each token by its WordNet synset richness."""
-        tokens = word_tokenize(text.lower())
+        clean_text = re.sub(r"\s+", " ", str(text or "")).strip().lower()
+        if not clean_text:
+            return np.zeros(self.input_dim)
+
+        # Fallback to split-based tokenization if NLTK resources are unavailable.
+        try:
+            tokens = word_tokenize(clean_text)
+        except Exception:
+            tokens = clean_text.split()
         
         # Semantic weight = synset count / 15 (normalization constant); 0 for unknown words
         embedding = np.zeros(self.input_dim)
         for i, token in enumerate(tokens[:self.input_dim]):
+            token = ''.join(ch for ch in token if ch.isalnum() or ch in ('-', '_'))
+            if not token:
+                continue
             n_synsets = len(wordnet.synsets(token))
             embedding[i] = n_synsets / 15.0 if n_synsets > 0 else 0.0
         
@@ -482,6 +494,13 @@ class StatefulSymbolicPredictiveInterpreter:
         # Governance
         self.policy_engine = PolicyEngine()
         self.governance_service = GovernanceService(self.policy_engine)
+
+        self.capability_profiles = {
+            'general': {'coding_bias': 0.0, 'tool_bias': 0.0, 'abstraction_bias': 1.0},
+            'coding': {'coding_bias': 0.25, 'tool_bias': 0.10, 'abstraction_bias': 0.85},
+            'tool_use': {'coding_bias': 0.10, 'tool_bias': 0.30, 'abstraction_bias': 0.80},
+        }
+        self._cross_reference_rounds = 3
         
         logger.info(f"StatefulSymbolicPredictiveInterpreter initialized (v{self.model_version}, IFT={enable_ift})")
     
@@ -497,14 +516,15 @@ class StatefulSymbolicPredictiveInterpreter:
             Complete output with governance applied
         """
         ctx = StatefulInferenceContext(self.memory, request_id)
+        normalized_input = self._normalize_input_data(input_data)
         
         try:
             # Stage 1: Encode Input
             ctx.start_stage("encode")
-            if 'text' in input_data:
-                ctx.encoded_input = self.encoder.encode_text(input_data['text'])
-            elif 'vector' in input_data:
-                ctx.encoded_input = self.encoder.encode_vector(input_data['vector'])
+            if 'text' in normalized_input:
+                ctx.encoded_input = self.encoder.encode_text(normalized_input['text'])
+            elif 'vector' in normalized_input:
+                ctx.encoded_input = self.encoder.encode_vector(normalized_input['vector'])
             else:
                 ctx.encoded_input = np.zeros(128)
             ctx.end_stage("encode")
@@ -534,16 +554,27 @@ class StatefulSymbolicPredictiveInterpreter:
             
             # Stage 6: Symbolic Interpretation
             ctx.start_stage("symbolic_reasoning")
-            concepts = input_data.get('concepts', [])
+            concepts = normalized_input.get('concepts', [])
             ctx.symbolic_interpretation = await self._async_symbolic_reasoning(
-                ctx.oscillated_output, concepts, input_data.get('text', '')
+                ctx.oscillated_output, concepts, normalized_input.get('text', '')
             )
             ctx.end_stage("symbolic_reasoning")
+
+            # Stage 6b: Cross-reference generation across field functions
+            ctx.start_stage("cross_reference_generation")
+            generation_payload = self._cross_reference_generation(
+                base_symbolic=ctx.symbolic_interpretation,
+                pattern_confidence=pattern_confidence,
+                concepts=concepts,
+                text=normalized_input.get('text', ''),
+                mode=normalized_input.get('mode', 'general'),
+            )
+            ctx.end_stage("cross_reference_generation")
             
             # Stage 7: Governance Evaluation
             ctx.start_stage("governance")
             policy_context = PolicyContext(
-                input_text=input_data.get('text', ''),
+                input_text=normalized_input.get('text', ''),
                 neural_magnitude=float(torch.norm(ctx.spikes).item()),
                 pattern_confidence=pattern_confidence,
                 symbolic_concepts=concepts,
@@ -554,7 +585,11 @@ class StatefulSymbolicPredictiveInterpreter:
             
             # Stage 8: Output Synthesis
             ctx.start_stage("output_synthesis")
-            ctx.final_output = self._synthesize_output(ctx)
+            ctx.final_output = self._synthesize_output(
+                ctx,
+                generation_payload=generation_payload,
+                mode=normalized_input.get('mode', 'general'),
+            )
             ctx.end_stage("output_synthesis")
             
             # Apply governance conditioning
@@ -566,7 +601,7 @@ class StatefulSymbolicPredictiveInterpreter:
             # Update memory context
             self.memory.add_to_context({
                 'concept': ' '.join(concepts),
-                'output': ctx.final_output.get('symbolic_result', '')[:50],
+                'output': ctx.final_output.get('symbolic_result', '')[:80],
             })
             
             return ctx.final_output
@@ -585,14 +620,25 @@ class StatefulSymbolicPredictiveInterpreter:
             text,
         )
     
-    def _synthesize_output(self, ctx: StatefulInferenceContext) -> Dict[str, Any]:
+    def _synthesize_output(
+        self,
+        ctx: StatefulInferenceContext,
+        generation_payload: Optional[Dict[str, Any]] = None,
+        mode: str = 'general',
+    ) -> Dict[str, Any]:
         """Combine all pipeline outputs into final response."""
         metrics = self.memory.get_neuroplastic_metrics()
+
+        symbolic_result = ctx.symbolic_interpretation or "No interpretation"
+        if generation_payload and generation_payload.get('best_response'):
+            symbolic_result = generation_payload['best_response']
+
+        world_knowledge_seed = self._build_world_knowledge_seed(limit=8)
         
         return {
             'request_id': ctx.request_id,
             'model_version': self.model_version,
-            'symbolic_result': ctx.symbolic_interpretation or "No interpretation",
+            'symbolic_result': symbolic_result,
             'neural_magnitude': float(torch.norm(ctx.spikes).item()) if ctx.spikes is not None else 0.0,
             'spike_rate': float(ctx.spikes.mean().item()) if ctx.spikes is not None else 0.0,
             'oscillatory_phase': float(self.memory.oscillator_phase),
@@ -610,7 +656,158 @@ class StatefulSymbolicPredictiveInterpreter:
                 'success_streak': metrics['success_streak'],
             },
             'hrm_state': self.symbolic_reasoner.get_hrm_snapshot(),
+            'generation_mode': mode,
+            'generation_result': symbolic_result,
+            'field_cross_reference': generation_payload or {
+                'winning_field': 'symbolic_baseline',
+                'scores': {'symbolic_baseline': 0.0},
+                'consensus_score': 0.0,
+            },
+            'neural_core': {
+                'world_knowledge_seed': world_knowledge_seed,
+                'context_threads': self.memory.get_context_summary().get('recent_concepts', []),
+                'coherence_anchor': float(metrics.get('success_streak', 0)) / 10.0,
+            },
         }
+
+    def _normalize_input_data(self, input_data: Any) -> Dict[str, Any]:
+        """Normalize messy inputs into stable schema for robust processing."""
+        if isinstance(input_data, dict):
+            payload: Dict[str, Any] = dict(input_data)
+        elif isinstance(input_data, str):
+            payload = {'text': input_data}
+        elif isinstance(input_data, (list, tuple)):
+            payload = {'concepts': [str(x) for x in input_data]}
+        else:
+            payload = {'text': str(input_data)}
+
+        raw_text = payload.get('text', '')
+        text = re.sub(r"[\x00-\x08\x0B-\x1F\x7F]", " ", str(raw_text))
+        text = re.sub(r"\s+", " ", text).strip()
+
+        concepts_raw = payload.get('concepts', [])
+        if isinstance(concepts_raw, str):
+            concepts = [c.strip().lower() for c in re.split(r"[,;|]", concepts_raw) if c.strip()]
+        elif isinstance(concepts_raw, (list, tuple, set)):
+            concepts = [str(c).strip().lower() for c in concepts_raw if str(c).strip()]
+        else:
+            concepts = []
+
+        if not concepts and text:
+            tokens = [t.lower() for t in re.findall(r"[a-zA-Z0-9_-]+", text) if len(t) > 3]
+            concepts = tokens[:8]
+
+        mode = str(payload.get('mode', 'general')).strip().lower()
+        if mode not in self.capability_profiles:
+            mode = 'general'
+
+        normalized: Dict[str, Any] = {
+            'text': text,
+            'concepts': list(dict.fromkeys(concepts)),
+            'mode': mode,
+        }
+
+        if 'vector' in payload:
+            normalized['vector'] = payload['vector']
+
+        return normalized
+
+    def _cross_reference_generation(
+        self,
+        base_symbolic: str,
+        pattern_confidence: float,
+        concepts: List[str],
+        text: str,
+        mode: str,
+    ) -> Dict[str, Any]:
+        """Generate responses via field-based candidates and pick consensus best."""
+        profile = self.capability_profiles.get(mode, self.capability_profiles['general'])
+        hrm = self.symbolic_reasoner.get_hrm_snapshot()
+        coherence = float(hrm.get('coherence', 0.0)) if hrm.get('enabled') else 0.0
+        stability = float(hrm.get('stability', 0.0)) if hrm.get('enabled') else 0.0
+        success_rate = float(self.memory.get_neuroplastic_metrics().get('success_rate', 0.0))
+        context = self.memory.get_context_summary()
+        recent_concepts = context.get('recent_concepts', []) if isinstance(context, dict) else []
+        overlap = self._concept_overlap(concepts, recent_concepts)
+
+        coding_hint = " Prioritize executable structure and testability." if mode == 'coding' else ""
+        tool_hint = " Prefer explicit tool/action sequencing." if mode == 'tool_use' else ""
+
+        candidates: List[Dict[str, Any]] = [
+            {
+                'field': 'symbolic_field',
+                'response': base_symbolic,
+                'score': 0.35 + 0.35 * pattern_confidence + 0.10 * overlap,
+            },
+            {
+                'field': 'coherence_field',
+                'response': (
+                    f"Coherent synthesis across concepts {concepts[:5]} with continuity from recent context "
+                    f"{recent_concepts[-3:]}."
+                ),
+                'score': 0.25 + 0.40 * coherence + 0.20 * stability + 0.10 * overlap,
+            },
+            {
+                'field': 'abstraction_transfer_field',
+                'response': (
+                    "Transfer abstractions by recursively mapping concept relations into reusable reasoning "
+                    f"patterns across domains.{coding_hint}{tool_hint}"
+                ),
+                'score': 0.20 + 0.30 * profile['abstraction_bias'] + 0.20 * pattern_confidence + 0.10 * overlap,
+            },
+            {
+                'field': 'capability_mode_field',
+                'response': (
+                    f"Mode={mode}: blend field evidence, memory continuity, and governance-safe synthesis "
+                    f"for robust output under noisy inputs.{coding_hint}{tool_hint}"
+                ),
+                'score': 0.15 + 0.25 * profile['coding_bias'] + 0.25 * profile['tool_bias'] + 0.20 * success_rate,
+            },
+        ]
+
+        for _ in range(max(1, self._cross_reference_rounds - 1)):
+            best = max(candidates, key=lambda c: c['score'])
+            for candidate in candidates:
+                alignment = self._token_overlap(best['response'], candidate['response'])
+                candidate['score'] = 0.75 * candidate['score'] + 0.25 * alignment
+
+        best = max(candidates, key=lambda c: c['score'])
+        scores = {c['field']: float(c['score']) for c in candidates}
+
+        return {
+            'winning_field': best['field'],
+            'scores': scores,
+            'consensus_score': float(best['score']),
+            'best_response': best['response'],
+        }
+
+    def _concept_overlap(self, a: List[str], b: List[str]) -> float:
+        """Overlap ratio between concept collections."""
+        set_a = {str(x).strip().lower() for x in a if str(x).strip()}
+        set_b = {str(x).strip().lower() for x in b if str(x).strip()}
+        if not set_a or not set_b:
+            return 0.0
+        return len(set_a.intersection(set_b)) / max(len(set_a), len(set_b))
+
+    def _token_overlap(self, a: str, b: str) -> float:
+        """Lexical overlap score for recursive cross-reference rounds."""
+        tokens_a = {t for t in re.findall(r"[a-zA-Z0-9_-]+", str(a).lower()) if len(t) > 2}
+        tokens_b = {t for t in re.findall(r"[a-zA-Z0-9_-]+", str(b).lower()) if len(t) > 2}
+        if not tokens_a or not tokens_b:
+            return 0.0
+        return len(tokens_a.intersection(tokens_b)) / max(len(tokens_a), len(tokens_b))
+
+    def _build_world_knowledge_seed(self, limit: int = 8) -> List[str]:
+        """Build compact world-knowledge seed from accumulated concept history."""
+        counts: Dict[str, int] = {}
+        for concept in self.memory.concept_history:
+            key = str(concept).strip().lower()
+            if not key:
+                continue
+            counts[key] = counts.get(key, 0) + 1
+
+        ordered = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+        return [name for name, _ in ordered[:limit]]
     
     def _error_output(self, error_msg: str, ctx: StatefulInferenceContext) -> Dict[str, Any]:
         """Generate error response."""
