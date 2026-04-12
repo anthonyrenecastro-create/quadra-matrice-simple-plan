@@ -18,18 +18,16 @@ import logging
 import numpy as np
 import torch
 import torch.nn as nn
-import sympy as sp
-from sympy.logic.boolalg import Implies
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 import asyncio
-import networkx as nx
 from nltk.tokenize import word_tokenize
 from nltk.corpus import wordnet
 
 from quadra.state.memory_store import MemoryStore, StatefulInferenceContext
 from quadra.core.governance.policy_adapter import PolicyEngine, GovernanceService, PolicyContext
 from quadra.core.field import FieldEngine
+from quadra.core.hrm import SimulationEngine, HRMState
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +39,17 @@ class InputEncoder:
         self.input_dim = input_dim
     
     def encode_text(self, text: str) -> np.ndarray:
-        """Simple encoding: average word embeddings via NLTK."""
+        """Semantic encoding: weight each token by its WordNet synset richness."""
         tokens = word_tokenize(text.lower())
         
-        # Simple frequency-based encoding
+        # Semantic weight = synset count / 15 (normalization constant); 0 for unknown words
         embedding = np.zeros(self.input_dim)
         for i, token in enumerate(tokens[:self.input_dim]):
-            embedding[i] = len(token) / 10.0  # Normalize by length
+            n_synsets = len(wordnet.synsets(token))
+            embedding[i] = n_synsets / 15.0 if n_synsets > 0 else 0.0
         
-        # Add context signal
-        embedding = embedding + np.random.randn(self.input_dim) * 0.01
+        # Add tiny noise to avoid zero vectors
+        embedding = embedding + np.random.randn(self.input_dim) * 0.0001
         return embedding / (np.linalg.norm(embedding) + 1e-8)
     
     def encode_vector(self, vector: np.ndarray) -> np.ndarray:
@@ -90,10 +89,12 @@ class PatternExtractor:
         for i, idx in enumerate(top_freqs):
             patterns[idx] = i + 1
         
-        # Confidence = how concentrated the power spectrum is
-        normalized_power = fft_result / (np.sum(fft_result) + 1e-8)
-        entropy = -np.sum(normalized_power * np.log(normalized_power + 1e-8))
-        confidence = np.exp(-entropy)  # Low entropy = high confidence
+        # Confidence = number of significant semantic peaks / expected richness.
+        # With synset-based encoding, each real word creates a peak well above noise.
+        abs_vals = np.abs(encoded_input)
+        threshold = np.mean(abs_vals) + np.std(abs_vals)
+        n_peaks = int(np.sum(abs_vals > threshold))
+        confidence = min(1.0, n_peaks / 5.0)
         
         return patterns, confidence
 
@@ -350,66 +351,100 @@ class OscillatorModule:
 class SymbolicReasoner:
     """Stage 6: Symbolic interpretation of neural output."""
     
-    def __init__(self, memory: MemoryStore):
+    def __init__(self, memory: MemoryStore, use_hrm: bool = True):
         self.memory = memory
-        self.knowledge_graph = nx.DiGraph()
+        self.use_hrm = use_hrm
+        self._relation_count = 0
+        self.hrm_engine = SimulationEngine(field_shape=(12, 12)) if use_hrm else None
+        self.hrm_state: Optional[HRMState] = self.hrm_engine.initialize() if self.hrm_engine else None
+        self._hrm_stride = 3
+        self._last_hrm_metrics: Dict[str, float] = {}
     
-    def interpret(self, neural_output: torch.Tensor, concepts: List[str]) -> str:
+    def _inject_signal(self, neural_output: torch.Tensor, concepts: List[str], text: str):
+        if not self.hrm_state:
+            return
+        signal = self.hrm_state.state_vector.copy()
+        signal[0] = float(torch.norm(neural_output).item())
+        signal[1] = float(neural_output.mean().item()) if neural_output.numel() > 0 else 0.0
+        signal[2] = float(len(concepts)) / 10.0
+        signal[3] = float(len(text)) / 256.0
+        signal[4] = float(sum(ord(ch) for ch in text[:32]) % 997) / 997.0 if text else 0.0
+        self.hrm_state.state_vector = 0.85 * self.hrm_state.state_vector + 0.15 * signal
+    
+    def get_hrm_snapshot(self) -> Dict[str, Any]:
+        if not self.hrm_state:
+            return {'enabled': False}
+        return {
+            'enabled': True,
+            'theta': float(self.hrm_state.theta),
+            'channel': int(self.hrm_state.channel),
+            'domain': int(self.hrm_state.domain),
+            'layer': int(self.hrm_state.layer),
+            'guna': self.hrm_state.guna,
+            'step_count': int(self.hrm_state.step_count),
+            'objective': float(self.hrm_state.last_metrics.get('objective', 0.0)),
+            'coherence': float(self.hrm_state.last_metrics.get('f_coherence', 0.0)),
+            'stability': float(self.hrm_state.last_metrics.get('f_stability', 0.0)),
+        }
+    
+    def interpret(self, neural_output: torch.Tensor, concepts: List[str], text: str = "") -> str:
         """
         Derive symbolic meaning from neural activations.
         
         Combines algebraic reasoning, logic, and knowledge graphs.
         """
         try:
-            # 6a: Algebraic reasoning
-            x, y = sp.symbols('x y')
-            expr = x**2 + y**2 - 1  # Unit circle
-            simplified = sp.simplify(expr)
-            algebra_result = f"Geometric relation: {expr} = {simplified}"
-            
-            # 6b: First-order logic
-            P_val = sp.Symbol('P_true')
-            Q_val = sp.Symbol('Q_true')
-            premise = Implies(P_val, Q_val)
-            logic_result = f"Logical implication: {premise}"
-            
-            # 6c: Semantic analysis & concept recording
-            semantic_items = []
-            for concept in concepts:
-                tokens = word_tokenize(concept.lower())
-                synonyms = []
-                for token in tokens:
-                    synsets = wordnet.synsets(token)
-                    if synsets:
-                        syn = synsets[0].lemmas()[0].name()
-                        synonyms.append(syn)
-                        self.memory.add_concept(syn)
-                
-                semantic_items.append(f"{concept}→{','.join(synonyms[:2])}")
-            
-            semantic_result = " | ".join(semantic_items)
-            
-            # 6d: Knowledge graph
-            for concept in concepts:
-                self.knowledge_graph.add_node(concept)
-                if len(self.knowledge_graph.nodes) > 1:
-                    prev = list(self.knowledge_graph.nodes)[-2]
-                    self.knowledge_graph.add_edge(prev, concept, weight=1.0)
-            
-            graph_summary = f"Knowledge nodes: {len(self.knowledge_graph.nodes)}, edges: {len(self.knowledge_graph.edges)}"
-            
-            # 6e: Neural integration
+            # Keep concept memory updates cheap and deterministic.
+            normalized_concepts = [c.strip().lower() for c in concepts if c and c.strip()]
+            for concept in normalized_concepts:
+                self.memory.add_concept(concept)
+            if len(normalized_concepts) > 1:
+                self._relation_count += len(normalized_concepts) - 1
+
+            # HRM-backed symbolic synthesis.
+            hrm_metrics: Dict[str, float] = {}
+            hrm_stepped = False
+            if self.use_hrm and self.hrm_engine and self.hrm_state is not None:
+                self._inject_signal(neural_output, normalized_concepts, text)
+                if self.hrm_state.step_count % self._hrm_stride == 0:
+                    self.hrm_state, hrm_metrics = self.hrm_engine.step(self.hrm_state, dt=0.02)
+                    self._last_hrm_metrics = hrm_metrics
+                    hrm_stepped = True
+                else:
+                    self.hrm_engine.cycle_engine.update(self.hrm_state, dt=1.0)
+                    self.hrm_engine.topology.route(self.hrm_state)
+                    self.hrm_state.step_count += 1
+                    hrm_metrics = self._last_hrm_metrics
+
             neural_magnitude = torch.norm(neural_output).item()
-            neural_info = f"Activation magnitude: {neural_magnitude:.4f}"
+            if self.hrm_state is not None:
+                manifold_summary = (
+                    f"HRM(theta={self.hrm_state.theta:.3f}, ch={self.hrm_state.channel}, "
+                    f"d={self.hrm_state.domain}, l={self.hrm_state.layer})"
+                )
+            else:
+                manifold_summary = "HRM(disabled)"
+
+            coherence = hrm_metrics.get('f_coherence', 0.0)
+            stability = hrm_metrics.get('f_stability', 0.0)
+            objective = hrm_metrics.get('objective', 0.0)
+
+            result = (
+                f"{manifold_summary} | concepts={len(normalized_concepts)} "
+                f"relations={self._relation_count} | "
+                f"coherence={coherence:.3f} stability={stability:.3f} "
+                f"objective={objective:.3f} | activation={neural_magnitude:.4f}"
+            )
             
-            result = f"{algebra_result} | {logic_result} | Semantics: {semantic_result} | {graph_summary} | {neural_info}"
-            
-            # Record trace
-            self.memory.add_reasoning_trace({
-                'concepts': concepts,
-                'neural_magnitude': neural_magnitude,
-                'graph_size': len(self.knowledge_graph.nodes),
-            })
+            # Keep trace payload compact and write less frequently in HRM mode.
+            if not self.use_hrm or hrm_stepped:
+                self.memory.add_reasoning_trace({
+                    'concepts': normalized_concepts,
+                    'neural_magnitude': neural_magnitude,
+                    'relation_count': self._relation_count,
+                    'hrm_channel': int(self.hrm_state.channel) if self.hrm_state else 0,
+                    'hrm_objective': float(objective),
+                })
             
             return result
         
@@ -427,7 +462,8 @@ class StatefulSymbolicPredictiveInterpreter:
     """
     
     def __init__(self, model_version: str = "spi-symbolic-0.2.0", 
-                 enable_ift: bool = True, field_shape: tuple = (32, 32)):
+                 enable_ift: bool = True, field_shape: tuple = (32, 32),
+                 enable_hrm: bool = True):
         self.model_version = model_version
         self.device = torch.device('cpu')
         self.enable_ift = enable_ift
@@ -441,7 +477,7 @@ class StatefulSymbolicPredictiveInterpreter:
         self.spike_generator = SpikeGenerator(input_dim=128, hidden_dim=64)
         self.oscillator = OscillatorModule(self.memory, enable_ift=enable_ift, field_shape=field_shape)
         self.neuroplastic_adapter = NeuroplasticAdapter(self.memory, oscillator=self.oscillator)
-        self.symbolic_reasoner = SymbolicReasoner(self.memory)
+        self.symbolic_reasoner = SymbolicReasoner(self.memory, use_hrm=enable_hrm)
         
         # Governance
         self.policy_engine = PolicyEngine()
@@ -500,7 +536,7 @@ class StatefulSymbolicPredictiveInterpreter:
             ctx.start_stage("symbolic_reasoning")
             concepts = input_data.get('concepts', [])
             ctx.symbolic_interpretation = await self._async_symbolic_reasoning(
-                ctx.oscillated_output, concepts
+                ctx.oscillated_output, concepts, input_data.get('text', '')
             )
             ctx.end_stage("symbolic_reasoning")
             
@@ -540,12 +576,13 @@ class StatefulSymbolicPredictiveInterpreter:
             return self._error_output(str(e), ctx)
     
     async def _async_symbolic_reasoning(self, neural_output: torch.Tensor, 
-                                       concepts: List[str]) -> str:
+                                       concepts: List[str], text: str = "") -> str:
         """Async wrapper for symbolic reasoning."""
         return await asyncio.to_thread(
             self.symbolic_reasoner.interpret,
             neural_output,
-            concepts
+            concepts,
+            text,
         )
     
     def _synthesize_output(self, ctx: StatefulInferenceContext) -> Dict[str, Any]:
@@ -571,7 +608,8 @@ class StatefulSymbolicPredictiveInterpreter:
                 'total_concepts': len(self.memory.concept_history),
                 'reasoning_traces': len(self.memory.reasoning_traces),
                 'success_streak': metrics['success_streak'],
-            }
+            },
+            'hrm_state': self.symbolic_reasoner.get_hrm_snapshot(),
         }
     
     def _error_output(self, error_msg: str, ctx: StatefulInferenceContext) -> Dict[str, Any]:
