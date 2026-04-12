@@ -20,6 +20,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from typing import Dict, Any, List, Optional, Tuple
+from dataclasses import dataclass
 from datetime import datetime
 import asyncio
 from nltk.tokenize import word_tokenize
@@ -31,6 +32,268 @@ from quadra.core.field import FieldEngine
 from quadra.core.hrm import SimulationEngine, HRMState
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RecursiveFieldResult:
+    """Result envelope for recursive latent refinement."""
+
+    latent_state: np.ndarray
+    ambiguity: float
+    coherence: float
+    stability: float
+    refinement_steps: int
+    candidate_responses: List[Dict[str, Any]]
+    knowledge_summary: List[str]
+
+
+class RecursiveNeuralCore:
+    """Shared recursive latent workspace for cross-field consensus synthesis."""
+
+    def __init__(
+        self,
+        latent_dim: int = 96,
+        max_refinement_steps: int = 5,
+        stop_threshold: float = 0.075,
+        seed: int = 42,
+    ):
+        self.latent_dim = latent_dim
+        self.max_refinement_steps = max_refinement_steps
+        self.stop_threshold = stop_threshold
+        self.rng = np.random.default_rng(seed)
+        self.latent_memory = np.zeros(latent_dim, dtype=np.float32)
+        self.domain_prototypes = {
+            'general': self._make_proto(0.10),
+            'coding': self._make_proto(0.45),
+            'tool_use': self._make_proto(-0.20),
+            'coherence': self._make_proto(0.65),
+            'abstraction': self._make_proto(-0.55),
+            'knowledge': self._make_proto(0.85),
+            'generation': self._make_proto(0.30),
+        }
+
+    def _make_proto(self, shift: float) -> np.ndarray:
+        x = np.linspace(-1.0, 1.0, self.latent_dim, dtype=np.float32)
+        proto = np.tanh(x + shift)
+        proto /= np.linalg.norm(proto) + 1e-8
+        return proto
+
+    def _safe_norm(self, x: np.ndarray) -> np.ndarray:
+        return x / (np.linalg.norm(x) + 1e-8)
+
+    def _tokenize(self, text: str) -> List[str]:
+        return [t for t in re.findall(r"[a-zA-Z0-9_-]+", str(text).lower()) if t]
+
+    def encode_request(
+        self,
+        text: str,
+        concepts: List[str],
+        mode: str,
+        neural_output: Optional[torch.Tensor],
+        hrm_snapshot: Dict[str, Any],
+        field_metrics: Dict[str, Any],
+        context_threads: Optional[List[str]] = None,
+        hrm_latent_anchor: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """Encode request and runtime diagnostics into a shared latent vector."""
+        text = str(text or "")
+        concepts = [str(c).strip().lower() for c in concepts if str(c).strip()]
+        context_threads = [str(c).strip().lower() for c in (context_threads or []) if str(c).strip()]
+        tokens = self._tokenize(text)
+
+        latent = np.zeros(self.latent_dim, dtype=np.float32)
+
+        a_end = self.latent_dim // 4
+        for i, tok in enumerate(tokens[:a_end]):
+            latent[i] = ((sum(ord(ch) for ch in tok) % 257) / 128.5) - 1.0
+
+        b_start = a_end
+        b_end = b_start + self.latent_dim // 4
+        for i, concept in enumerate(concepts[: (b_end - b_start)]):
+            latent[b_start + i] = ((sum(ord(ch) for ch in concept) % 251) / 125.5) - 1.0
+
+        c_start = b_end
+        c_end = c_start + self.latent_dim // 6
+        for i, ctx in enumerate(context_threads[: (c_end - c_start)]):
+            latent[c_start + i] = ((sum(ord(ch) for ch in ctx) % 241) / 120.5) - 1.0
+
+        scalars: List[float] = []
+        scalars.append(float(len(tokens)) / 64.0)
+        scalars.append(float(len(concepts)) / 16.0)
+        scalars.append(float(hrm_snapshot.get('coherence', 0.0)))
+        scalars.append(float(hrm_snapshot.get('stability', 0.0)))
+        scalars.append(float(hrm_snapshot.get('objective', 0.0)))
+        scalars.append(float(field_metrics.get('field_energy', field_metrics.get('energy', 0.0))) / 10.0)
+        scalars.append(float(field_metrics.get('symmetry_order', field_metrics.get('symmetry', 0.0))))
+        scalars.append(float(field_metrics.get('global_potential', field_metrics.get('potential', 0.0))))
+
+        if neural_output is not None and hasattr(neural_output, 'detach'):
+            arr = neural_output.detach().cpu().numpy().astype(np.float32).flatten()
+            if arr.size > 0:
+                scalars.extend([
+                    float(arr.mean()),
+                    float(arr.std()),
+                    float(np.linalg.norm(arr)),
+                ])
+            else:
+                scalars.extend([0.0, 0.0, 0.0])
+        else:
+            scalars.extend([0.0, 0.0, 0.0])
+
+        d_start = c_end
+        for i, value in enumerate(scalars[: (self.latent_dim - d_start)]):
+            latent[d_start + i] = value
+
+        if hrm_latent_anchor is not None and hrm_latent_anchor.size > 0:
+            anchor = np.array(hrm_latent_anchor, dtype=np.float32).flatten()
+            if anchor.size < self.latent_dim:
+                anchor = np.pad(anchor, (0, self.latent_dim - anchor.size), mode='constant')
+            else:
+                anchor = anchor[:self.latent_dim]
+            latent = 0.85 * latent + 0.15 * anchor
+
+        latent += 0.28 * self.domain_prototypes.get(mode, self.domain_prototypes['general'])
+        latent = self._safe_norm(latent)
+        self.latent_memory = 0.88 * self.latent_memory + 0.12 * latent
+        latent = self._safe_norm(0.72 * latent + 0.28 * self.latent_memory)
+        return latent
+
+    def recursive_refine(
+        self,
+        latent: np.ndarray,
+        concepts: List[str],
+        knowledge_seed: List[str],
+        mode: str,
+        base_symbolic: str,
+    ) -> RecursiveFieldResult:
+        """Run recursive, cross-constraint field refinement over latent state."""
+        concepts = [str(c).strip().lower() for c in concepts if str(c).strip()]
+        knowledge_seed = [str(k).strip().lower() for k in knowledge_seed if str(k).strip()]
+
+        state = latent.copy()
+        candidates: List[Dict[str, Any]] = []
+        ambiguity = 1.0
+        coherence = 0.0
+        stability = 0.0
+
+        for step in range(1, self.max_refinement_steps + 1):
+            field_views = self._field_pass(
+                state=state,
+                concepts=concepts,
+                knowledge_seed=knowledge_seed,
+                mode=mode,
+                step=step,
+                base_symbolic=base_symbolic,
+            )
+
+            stacked = np.stack([view['latent'] for view in field_views], axis=0)
+            fused = np.mean(stacked, axis=0)
+
+            deltas = np.linalg.norm(stacked - fused, axis=1)
+            ambiguity = float(np.mean(deltas))
+            coherence = float(np.mean([view['coherence'] for view in field_views]))
+            stability = float(1.0 / (1.0 + np.std(stacked)))
+
+            state = self._safe_norm(0.58 * state + 0.42 * fused)
+
+            candidates = []
+            for view in field_views:
+                alignment = float((np.dot(view['latent'], state) + 1.0) / 2.0)
+                score = (
+                    0.34 * view['coherence']
+                    + 0.22 * stability
+                    + 0.18 * alignment
+                    + 0.16 * (1.0 - ambiguity)
+                    + 0.10 * view['specificity']
+                )
+                candidates.append(
+                    {
+                        'field': view['field'],
+                        'response': view['response'],
+                        'score': float(score),
+                        'alignment': alignment,
+                    }
+                )
+
+            if ambiguity <= self.stop_threshold:
+                return RecursiveFieldResult(
+                    latent_state=state,
+                    ambiguity=ambiguity,
+                    coherence=coherence,
+                    stability=stability,
+                    refinement_steps=step,
+                    candidate_responses=candidates,
+                    knowledge_summary=knowledge_seed[:8],
+                )
+
+        return RecursiveFieldResult(
+            latent_state=state,
+            ambiguity=ambiguity,
+            coherence=coherence,
+            stability=stability,
+            refinement_steps=self.max_refinement_steps,
+            candidate_responses=candidates,
+            knowledge_summary=knowledge_seed[:8],
+        )
+
+    def _field_pass(
+        self,
+        state: np.ndarray,
+        concepts: List[str],
+        knowledge_seed: List[str],
+        mode: str,
+        step: int,
+        base_symbolic: str,
+    ) -> List[Dict[str, Any]]:
+        """Generate coupled field views over a common latent state."""
+        ctext = ', '.join(concepts[:6]) if concepts else 'the current request'
+        ktext = ', '.join(knowledge_seed[:5]) if knowledge_seed else 'current context memory'
+
+        fields: List[Dict[str, Any]] = []
+        specs = [
+            (
+                'shared_representation_field',
+                'coherence',
+                f"Shared latent framing for {ctext}; preserve continuity, stabilize references, and reduce representation drift.",
+            ),
+            (
+                'knowledge_integration_field',
+                'knowledge',
+                f"Integrate prior knowledge from {ktext} with the active request around {ctext}; resolve conflicts before output.",
+            ),
+            (
+                'abstraction_transfer_field',
+                'abstraction',
+                f"Extract reusable relational structure from {ctext} and map it into a transferable reasoning template across domains.",
+            ),
+            (
+                'fluent_generation_field',
+                'generation',
+                f"{base_symbolic} Refine wording through recursive field consensus so the answer is more coherent, natural, and constraint-aware.",
+            ),
+        ]
+
+        generation_bias = self.domain_prototypes.get(mode, self.domain_prototypes['general'])
+        for name, proto_name, response in specs:
+            proto = self.domain_prototypes.get(proto_name, self.domain_prototypes['general'])
+            if name == 'fluent_generation_field':
+                latent = self._safe_norm(0.52 * state + 0.23 * proto + 0.25 * generation_bias)
+            else:
+                latent = self._safe_norm(0.74 * state + 0.26 * proto)
+
+            coherence = float((np.dot(latent, proto) + 1.0) / 2.0)
+            specificity = min(1.0, 0.12 * len(concepts) + 0.08 * len(knowledge_seed) + 0.12 * step)
+            fields.append(
+                {
+                    'field': name,
+                    'latent': latent,
+                    'coherence': coherence,
+                    'specificity': specificity,
+                    'response': response,
+                }
+            )
+
+        return fields
 
 
 class InputEncoder:
@@ -501,6 +764,11 @@ class StatefulSymbolicPredictiveInterpreter:
             'tool_use': {'coding_bias': 0.10, 'tool_bias': 0.30, 'abstraction_bias': 0.80},
         }
         self._cross_reference_rounds = 3
+        self.recursive_neural_core = RecursiveNeuralCore(
+            latent_dim=96,
+            max_refinement_steps=5,
+            stop_threshold=0.075,
+        )
         
         logger.info(f"StatefulSymbolicPredictiveInterpreter initialized (v{self.model_version}, IFT={enable_ift})")
     
@@ -570,6 +838,15 @@ class StatefulSymbolicPredictiveInterpreter:
                 mode=normalized_input.get('mode', 'general'),
             )
             ctx.end_stage("cross_reference_generation")
+
+            # Stage 6c: Recursive dynamic field core integration
+            ctx.start_stage("recursive_neural_core")
+            generation_payload = self._integrate_recursive_neural_core(
+                ctx=ctx,
+                normalized_input=normalized_input,
+                generation_payload=generation_payload,
+            )
+            ctx.end_stage("recursive_neural_core")
             
             # Stage 7: Governance Evaluation
             ctx.start_stage("governance")
@@ -634,6 +911,7 @@ class StatefulSymbolicPredictiveInterpreter:
             symbolic_result = generation_payload['best_response']
 
         world_knowledge_seed = self._build_world_knowledge_seed(limit=8)
+        recursive_report = generation_payload.get('recursive_core', {}) if generation_payload else {}
         
         return {
             'request_id': ctx.request_id,
@@ -664,11 +942,110 @@ class StatefulSymbolicPredictiveInterpreter:
                 'consensus_score': 0.0,
             },
             'neural_core': {
+                'type': recursive_report.get('type', 'recursive_dynamic_field_core'),
+                'knowledge_summary': recursive_report.get('knowledge_summary', world_knowledge_seed),
+                'ambiguity': recursive_report.get('ambiguity', 1.0),
+                'coherence': recursive_report.get('coherence', 0.0),
+                'stability': recursive_report.get('stability', 0.0),
+                'refinement_steps': recursive_report.get('refinement_steps', 0),
+                'winning_field': recursive_report.get('winning_field', generation_payload.get('winning_field', 'symbolic_baseline') if generation_payload else 'symbolic_baseline'),
+                'latent_norm': recursive_report.get('latent_norm', 0.0),
                 'world_knowledge_seed': world_knowledge_seed,
                 'context_threads': self.memory.get_context_summary().get('recent_concepts', []),
                 'coherence_anchor': float(metrics.get('success_streak', 0)) / 10.0,
             },
         }
+
+    def _integrate_recursive_neural_core(
+        self,
+        ctx: StatefulInferenceContext,
+        normalized_input: Dict[str, Any],
+        generation_payload: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Fuse generation payload with recursive dynamic field core consensus."""
+        text = str(normalized_input.get('text', ''))
+        concepts = list(normalized_input.get('concepts', []))
+        mode = str(normalized_input.get('mode', 'general')).strip().lower()
+
+        if not concepts and text:
+            concepts = [t for t in re.findall(r"[a-zA-Z0-9_-]+", text.lower()) if len(t) > 3][:8]
+
+        hrm_snapshot = self.symbolic_reasoner.get_hrm_snapshot()
+        field_metrics = self.memory.get_ift_metrics() if self.enable_ift else {
+            'enabled': False,
+            'field_energy': 0.0,
+            'symmetry_order': 0.0,
+            'global_potential': 0.0,
+        }
+
+        context_summary = self.memory.get_context_summary()
+        context_threads = context_summary.get('recent_concepts', []) if isinstance(context_summary, dict) else []
+        knowledge_seed = self._build_world_knowledge_seed(limit=12)
+
+        hrm_anchor = None
+        if (
+            self.symbolic_reasoner.hrm_state is not None
+            and self.symbolic_reasoner.hrm_engine is not None
+            and hasattr(self.symbolic_reasoner.hrm_engine, 'extract_recursive_diagnostics')
+        ):
+            hrm_diag = self.symbolic_reasoner.hrm_engine.extract_recursive_diagnostics(
+                self.symbolic_reasoner.hrm_state,
+                latent_dim=self.recursive_neural_core.latent_dim,
+            )
+            hrm_anchor = np.array(hrm_diag.get('latent_anchor', []), dtype=np.float32)
+
+        latent = self.recursive_neural_core.encode_request(
+            text=text,
+            concepts=concepts,
+            mode=mode,
+            neural_output=getattr(ctx, 'oscillated_output', None),
+            hrm_snapshot=hrm_snapshot,
+            field_metrics=field_metrics,
+            context_threads=context_threads,
+            hrm_latent_anchor=hrm_anchor,
+        )
+
+        base_symbolic = generation_payload.get('best_response') or (ctx.symbolic_interpretation or 'No interpretation')
+        refined = self.recursive_neural_core.recursive_refine(
+            latent=latent,
+            concepts=concepts,
+            knowledge_seed=knowledge_seed,
+            mode=mode,
+            base_symbolic=base_symbolic,
+        )
+
+        best = max(refined.candidate_responses, key=lambda c: c['score']) if refined.candidate_responses else {
+            'field': 'fallback',
+            'response': base_symbolic,
+            'score': 0.0,
+        }
+
+        merged = dict(generation_payload)
+        merged.update(
+            {
+                'winning_field': best['field'],
+                'best_response': best['response'],
+                'consensus_score': float(best['score']),
+                'ambiguity': float(refined.ambiguity),
+                'coherence': float(refined.coherence),
+                'stability': float(refined.stability),
+                'refinement_steps': int(refined.refinement_steps),
+                'candidate_responses': refined.candidate_responses,
+                'knowledge_summary': refined.knowledge_summary,
+                'latent_norm': float(np.linalg.norm(refined.latent_state)),
+                'recursive_core': {
+                    'type': 'recursive_dynamic_field_core',
+                    'knowledge_summary': refined.knowledge_summary,
+                    'ambiguity': float(refined.ambiguity),
+                    'coherence': float(refined.coherence),
+                    'stability': float(refined.stability),
+                    'refinement_steps': int(refined.refinement_steps),
+                    'winning_field': best['field'],
+                    'latent_norm': float(np.linalg.norm(refined.latent_state)),
+                },
+            }
+        )
+        return merged
 
     def _normalize_input_data(self, input_data: Any) -> Dict[str, Any]:
         """Normalize messy inputs into stable schema for robust processing."""

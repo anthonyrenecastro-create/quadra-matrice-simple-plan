@@ -279,8 +279,15 @@ class TestStatefulInterpreter:
         assert 'scores' in cross_ref and isinstance(cross_ref['scores'], dict)
         assert len(cross_ref['scores']) >= 3
         assert 'consensus_score' in cross_ref
+        assert 'candidate_responses' in cross_ref
+        assert isinstance(cross_ref['candidate_responses'], list)
+        assert len(cross_ref['candidate_responses']) >= 3
+        assert 'refinement_steps' in cross_ref
         assert 'world_knowledge_seed' in neural_core
         assert isinstance(neural_core['world_knowledge_seed'], list)
+        assert neural_core.get('type') == 'recursive_dynamic_field_core'
+        assert neural_core.get('refinement_steps', 0) >= 1
+        assert 'ambiguity' in neural_core and 'stability' in neural_core
 
 
 class TestGovernancePolicy:

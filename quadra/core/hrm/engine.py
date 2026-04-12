@@ -376,3 +376,47 @@ class SimulationEngine:
         for _ in range(T):
             state, metrics = self.step(state, dt=dt)
         return state, metrics
+
+    def extract_recursive_diagnostics(self, state: HRMState, latent_dim: int = 96) -> Dict[str, np.ndarray | float]:
+        """Export compact, deterministic diagnostics for external recursive latent cores."""
+        if latent_dim <= 0:
+            latent_dim = 16
+
+        features = np.array(
+            [
+                float(np.mean(state.field)),
+                float(np.std(state.field)),
+                float(np.var(state.field)),
+                float(np.mean(np.abs(state.field))),
+                float(np.linalg.norm(state.state_vector)),
+                float(state.theta / (2.0 * np.pi)),
+                float(state.channel / max(1, self.topology.channels)),
+                float(state.domain / max(1, self.topology.domains)),
+                float(state.layer / max(1, self.topology.layers)),
+                float(state.last_metrics.get('objective', 0.0)),
+                float(state.last_metrics.get('f_coherence', 0.0)),
+                float(state.last_metrics.get('f_stability', 0.0)),
+                float(state.last_metrics.get('f_precision', 0.0)),
+                float(state.guna[0]),
+                float(state.guna[1]),
+                float(state.guna[2]),
+            ],
+            dtype=np.float32,
+        )
+
+        vec = np.array(state.state_vector, dtype=np.float32).flatten()
+        raw = np.concatenate([features, vec], axis=0)
+        if raw.size < latent_dim:
+            raw = np.pad(raw, (0, latent_dim - raw.size), mode='constant')
+        else:
+            raw = raw[:latent_dim]
+
+        norm = np.linalg.norm(raw) + 1e-8
+        latent_anchor = raw / norm
+
+        return {
+            'latent_anchor': latent_anchor,
+            'coherence': float(state.last_metrics.get('f_coherence', 0.0)),
+            'stability': float(state.last_metrics.get('f_stability', 0.0)),
+            'objective': float(state.last_metrics.get('objective', 0.0)),
+        }
