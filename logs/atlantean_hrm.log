@@ -1,0 +1,3 @@
+2026-04-13 06:46:37 - utils.logging_config - [32mINFO[0m - setup_logging:125 - Logging initialized at DEBUG level
+2026-04-13 06:46:37 - utils.logging_config - [32mINFO[0m - setup_logging:127 - Log files in: /workspaces/cognitive_sim/logs
+2026-04-13 06:46:37 - app - [32mINFO[0m - <module>:174 - ML-specific components initialized

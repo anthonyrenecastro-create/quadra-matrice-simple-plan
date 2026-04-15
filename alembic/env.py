@@ -15,7 +15,7 @@ from database import Base
 config = context.config
 
 # Override sqlalchemy.url with environment variable if set
-database_url = os.getenv('DATABASE_URL', 'sqlite:///quadra_matrix.db')
+database_url = os.getenv('DATABASE_URL', 'sqlite:///atlantean_hrm.db')
 config.set_main_option('sqlalchemy.url', database_url)
 
 # Interpret the config file for Python logging

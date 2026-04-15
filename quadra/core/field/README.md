@@ -172,7 +172,7 @@ leak = engine.effective_leak(base=0.1)
 ### With Existing Oscillator
 
 ```python
-from quadra_matrix_spi import OscillatorySynapseTheory
+from atlantean_hrm_spi import OscillatorySynapseTheory
 from quadra.core.field import FieldEngine
 
 # Standard oscillator

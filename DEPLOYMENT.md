@@ -58,8 +58,8 @@ Key environment variables:
 ```
 models/                        # Persistent model storage
 ├── oscillator_weights.pth
-├── quadra_matrix_enhanced.pth
-└── quadra_matrix_weights.pth
+├── atlantean_hrm_enhanced.pth
+└── atlantean_hrm_weights.pth
 
 dashboard_state/               # Training state
 ├── oscillator_weights.pth

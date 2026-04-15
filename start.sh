@@ -10,10 +10,10 @@ echo "1. Interactive Menu (recommended)"
 echo "   python launch.py"
 echo ""
 echo "2. Quick Demo (20 batches, ~2 minutes)"
-echo "   python -c \"import asyncio; from train_quadra_matrix import CognitionSimTrainer; asyncio.run(CognitionSimTrainer(100).train('wikitext', 'wikitext-2-raw-v1', 20, 5))\""
+echo "   python -c \"import asyncio; from train_atlantean_hrm import CognitionSimTrainer; asyncio.run(CognitionSimTrainer(100).train('wikitext', 'wikitext-2-raw-v1', 20, 5))\""
 echo ""
 echo "3. Full Training (100 batches, ~10 minutes)"
-echo "   python train_quadra_matrix.py"
+echo "   python train_atlantean_hrm.py"
 echo ""
 echo "4. View Results"
 echo "   python results_summary.py"
@@ -31,11 +31,11 @@ case $choice in
         ;;
     2)
         echo "🚀 Starting quick demo..."
-        python -c "import asyncio; from train_quadra_matrix import CognitionSimTrainer; asyncio.run(CognitionSimTrainer(100, 'cpu').train('wikitext', 'wikitext-2-raw-v1', 20, 5))"
+        python -c "import asyncio; from train_atlantean_hrm import CognitionSimTrainer; asyncio.run(CognitionSimTrainer(100, 'cpu').train('wikitext', 'wikitext-2-raw-v1', 20, 5))"
         ;;
     3)
         echo "📊 Starting full training..."
-        python train_quadra_matrix.py
+        python train_atlantean_hrm.py
         ;;
     4)
         python results_summary.py

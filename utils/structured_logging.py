@@ -81,14 +81,14 @@ def setup_structured_logging(
         logs_dir.mkdir(parents=True, exist_ok=True)
         
         # Application log
-        app_log_file = logs_dir / 'quadra_matrix.json.log'
+        app_log_file = logs_dir / 'atlantean_hrm.json.log'
         file_handler = logging.FileHandler(app_log_file)
         file_handler.setLevel(getattr(logging, log_level.upper()))
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
         
         # Error log
-        error_log_file = logs_dir / 'quadra_matrix_error.json.log'
+        error_log_file = logs_dir / 'atlantean_hrm_error.json.log'
         error_handler = logging.FileHandler(error_log_file)
         error_handler.setLevel(logging.ERROR)
         error_handler.setFormatter(formatter)
@@ -107,14 +107,14 @@ LOGSTASH_CONFIG = """
 
 input {
   file {
-    path => "/app/logs/quadra_matrix.json.log"
+    path => "/app/logs/atlantean_hrm.json.log"
     codec => "json"
     type => "cognitionsim-app"
     start_position => "beginning"
   }
   
   file {
-    path => "/app/logs/quadra_matrix_error.json.log"
+    path => "/app/logs/atlantean_hrm_error.json.log"
     codec => "json"
     type => "cognitionsim-error"
     start_position => "beginning"
@@ -176,7 +176,7 @@ scrape_configs:
         labels:
           job: cognitionsim
           application: cognitionsim-ai
-          __path__: /app/logs/quadra_matrix.json.log
+          __path__: /app/logs/atlantean_hrm.json.log
     
     pipeline_stages:
       - json:
@@ -207,8 +207,8 @@ FLUENTD_CONFIG = """
 
 <source>
   @type tail
-  path /app/logs/quadra_matrix.json.log
-  pos_file /var/log/td-agent/quadra_matrix.pos
+  path /app/logs/atlantean_hrm.json.log
+  pos_file /var/log/td-agent/atlantean_hrm.pos
   tag quadra.matrix.app
   <parse>
     @type json
@@ -219,8 +219,8 @@ FLUENTD_CONFIG = """
 
 <source>
   @type tail
-  path /app/logs/quadra_matrix_error.json.log
-  pos_file /var/log/td-agent/quadra_matrix_error.pos
+  path /app/logs/atlantean_hrm_error.json.log
+  pos_file /var/log/td-agent/atlantean_hrm_error.pos
   tag quadra.matrix.error
   <parse>
     @type json

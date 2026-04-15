@@ -46,7 +46,7 @@ tests/
 ├── __init__.py           # Test package initialization
 ├── test_config.py        # Configuration tests
 ├── test_app.py          # Flask app tests (to be added)
-├── test_quadra_matrix.py # Model tests (to be added)
+├── test_atlantean_hrm.py # Model tests (to be added)
 └── conftest.py          # Pytest fixtures (to be added)
 ```
 

@@ -56,7 +56,7 @@ except ImportError as e:
     print(f"WARNING: Utils module not available, using basic error handling: {e}")
 
 # Import the main components
-from quadra_matrix_spi import (
+from atlantean_hrm_spi import (
     OscillatorySynapseTheory,
     PatternModule,
     SymbolicConfig,
@@ -86,7 +86,7 @@ if UTILS_AVAILABLE:
         setup_logging(
             log_level=getattr(config, 'LOG_LEVEL', 'INFO'),
             log_dir=log_dir,
-            app_name='quadra_matrix',
+            app_name='atlantean_hrm',
             enable_console=True,
             enable_file=True
         )

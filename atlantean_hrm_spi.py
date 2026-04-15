@@ -1,7 +1,9 @@
 import asyncio
+import importlib.util
 import logging
 import random
 import re
+import sys
 import time
 import json
 import numpy as np
@@ -10,9 +12,38 @@ from sympy.logic.boolalg import And, Or, Not, Implies
 from sympy import symbols
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
-import snntorch as snn
-from snntorch import surrogate
+try:
+    import snntorch as snn
+    from snntorch import surrogate
+except ImportError:
+    class _FallbackLeaky(nn.Module):
+        def __init__(self, beta: float = 0.95, spike_grad=None):
+            super().__init__()
+            self.beta = float(beta)
+
+        def init_leaky(self):
+            return None
+
+        def forward(self, cur: torch.Tensor, mem):
+            if mem is None:
+                mem = torch.zeros_like(cur)
+            mem = self.beta * mem + cur
+            spk = (mem > 0.0).float()
+            mem = mem * (1.0 - spk)
+            return spk, mem
+
+    class _FallbackSNN:
+        Leaky = _FallbackLeaky
+
+    class _FallbackSurrogate:
+        @staticmethod
+        def fast_sigmoid():
+            return None
+
+    snn = _FallbackSNN()
+    surrogate = _FallbackSurrogate()
 import networkx as nx
 from scipy.fft import fft, fftfreq
 from scipy.integrate import solve_ivp
@@ -21,7 +52,8 @@ from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 from collections import Counter, deque
 from dataclasses import dataclass
-from typing import List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import wordnet
@@ -254,14 +286,159 @@ class SpikingFeedbackNN(nn.Module):
         penalty = self.forward(torch.full((1, field.size(0)), variance.item())).item()
         return field - penalty * variance
 
+
+def _load_hrm_simulation_engine_class():
+    """Load HRM SimulationEngine directly to avoid package import side-effects."""
+    module_name = "quadra_hrm_engine_runtime"
+    if module_name in sys.modules:
+        return sys.modules[module_name].SimulationEngine
+
+    engine_path = Path(__file__).resolve().parent / "quadra" / "core" / "hrm" / "engine.py"
+    spec = importlib.util.spec_from_file_location(module_name, engine_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load HRM engine from {engine_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module.SimulationEngine
+
+
+class AtlanteanHRMElement:
+    """Atlantean field solver coupled to HRM state for SNN modulation."""
+
+    def __init__(self, field_size: int, device: torch.device):
+        self.device = device
+        self.field_size = int(field_size)
+        self.grid_side = int(np.ceil(np.sqrt(self.field_size)))
+        self.grid_size = self.grid_side * self.grid_side
+
+        # Equation 1 field: excitability (pattern formation)
+        self.phi1 = torch.randn(self.grid_size, device=self.device) * 0.05
+        # Equation 2 field: entropy/resource memory
+        self.phi5 = torch.ones(self.grid_size, device=self.device) * 0.1
+        self.Phi = torch.zeros(self.grid_size, device=self.device)
+        self.membrane = torch.zeros(self.grid_size, device=self.device)
+
+        # Atlantean coefficients
+        self.alpha = 0.18
+        self.gamma1 = 0.07
+        self.beta = 0.045
+        self.zeta = 0.06
+        self.omega = 0.05
+        self.theta = 0.05
+        self.gamma5 = 0.04
+        self.base_threshold = 1.0
+        self.base_leak = 0.12
+
+    def _to_grid(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.flatten()
+        if x.numel() < self.grid_size:
+            x = F.pad(x, (0, self.grid_size - x.numel()))
+        else:
+            x = x[: self.grid_size]
+        return x.view(1, 1, self.grid_side, self.grid_side)
+
+    def _from_grid(self, x: torch.Tensor) -> torch.Tensor:
+        flat = x.reshape(-1)
+        return flat[: self.grid_size]
+
+    def laplacian(self, x: torch.Tensor) -> torch.Tensor:
+        k = torch.tensor(
+            [[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]],
+            device=self.device,
+        ).view(1, 1, 3, 3)
+        xg = self._to_grid(x)
+        xg = F.pad(xg, (1, 1, 1, 1), mode='circular')
+        return self._from_grid(F.conv2d(xg, k))
+
+    def pde_step(self, hrm_force: float = 0.0, dt: float = 0.01):
+        lap_phi1 = self.laplacian(self.phi1)
+        bi_lap_phi1 = self.laplacian(lap_phi1)
+        lap_phi5 = self.laplacian(self.phi5)
+        lap_Phi = self.laplacian(self.Phi)
+
+        reaction = -self.alpha * (torch.abs(self.phi1) ** 2) * self.phi1 + self.zeta * lap_Phi + 0.1 * hrm_force
+        diffusion = -self.gamma1 * lap_phi1 + self.beta * bi_lap_phi1
+        self.phi1 = torch.clamp(self.phi1 + dt * (diffusion + reaction), -4.0, 4.0)
+
+        log_term = self.omega * self.phi5 * torch.log(torch.abs(self.phi5) + 1e-6)
+        advection = self.theta * (lap_phi5 * self.Phi + self.phi5 * lap_Phi)
+        self.phi5 = torch.clamp(self.phi5 + dt * (-self.gamma5 * lap_phi5 + log_term + advection), -1.0, 5.0)
+
+    def dynamic_threshold(self) -> torch.Tensor:
+        return self.base_threshold - 0.5 * self.phi1
+
+    def effective_leak(self) -> torch.Tensor:
+        return self.base_leak * (1.0 / (1.0 + torch.relu(self.phi5)))
+
+    def step(self, input_signal: torch.Tensor, hrm_force: float = 0.0, dt: float = 0.01) -> torch.Tensor:
+        x = input_signal.flatten()
+        if x.numel() < self.grid_size:
+            x = F.pad(x, (0, self.grid_size - x.numel()))
+        else:
+            x = x[: self.grid_size]
+
+        self.pde_step(hrm_force=hrm_force, dt=dt)
+        threshold = self.dynamic_threshold()
+        leak = self.effective_leak()
+
+        self.membrane = self.membrane * (1.0 - leak) + x
+        spikes = (self.membrane > threshold).float()
+        self.membrane = self.membrane * (1.0 - spikes)
+
+        # Global interplay potential feedback.
+        self.Phi = 0.9 * self.Phi + 0.1 * spikes
+        return spikes[: self.field_size]
+
+    def current_field(self) -> torch.Tensor:
+        return self.phi1[: self.field_size].clone()
+
+
+class _OscillatorProxyNN(nn.Module):
+    """Compatibility proxy so existing code can call nn1/nn2/nn3."""
+
+    def __init__(self, parent: "OscillatorySynapseTheory", mode: str):
+        super().__init__()
+        self.parent = parent
+        self.mode = mode
+        self.gain = nn.Parameter(torch.tensor(1.0, device=parent.device))
+
+    def forward(self, x: torch.Tensor, num_steps: int = 1) -> torch.Tensor:
+        out = self.parent._route_through_atlantean_hrm(x, self.mode)
+        return out * torch.sigmoid(self.gain)
+
+    def update_field(self, field: torch.Tensor, chaos_threshold: float = 0.1) -> torch.Tensor:
+        out = self.forward(field)
+        if torch.var(out) > chaos_threshold:
+            out = out * 0.75
+        return out
+
+    def adjust_syntropy(self, field: torch.Tensor, target_mean: float = 0.5, speed_factor: float = 0.5) -> torch.Tensor:
+        out = self.forward(field)
+        return out + (target_mean - torch.mean(out)) * speed_factor * 0.1
+
+    def penalize_variance(self, field: torch.Tensor) -> torch.Tensor:
+        out = self.forward(field)
+        return out - 0.1 * torch.var(out)
+
 # --- Core Theoretical Engines ---
 class OscillatorySynapseTheory:
     def __init__(self, field_size: int = 100, device: str = 'cpu'):
         self.device = torch.device(device)
-        self.field = torch.randn(field_size, device=self.device) * 0.1
-        self.nn1 = SpikingFieldUpdateNN(field_size).to(self.device)
-        self.nn2 = SpikingSyntropyNN(field_size).to(self.device)
-        self.nn3 = SpikingFeedbackNN(field_size).to(self.device)
+        self.field_size = int(field_size)
+        self.atlantean = AtlanteanHRMElement(self.field_size, self.device)
+        self.field = self.atlantean.current_field()
+
+        SimulationEngine = _load_hrm_simulation_engine_class()
+        hrm_side = int(np.ceil(np.sqrt(max(36, self.field_size))))
+        self.hrm_engine = SimulationEngine(field_shape=(hrm_side, hrm_side), seed=42)
+        self.hrm_state = self.hrm_engine.initialize()
+        self.last_hrm_metrics: Dict[str, float] = {}
+
+        # Compatibility proxies: external modules still use nn1/nn2/nn3.
+        self.nn1 = _OscillatorProxyNN(self, "update_field").to(self.device)
+        self.nn2 = _OscillatorProxyNN(self, "adjust_syntropy").to(self.device)
+        self.nn3 = _OscillatorProxyNN(self, "penalize_variance").to(self.device)
         self.optimizer1 = optim.Adam(self.nn1.parameters(), lr=0.001)
         self.optimizer2 = optim.Adam(self.nn2.parameters(), lr=0.001)
         self.optimizer3 = optim.Adam(self.nn3.parameters(), lr=0.001)
@@ -273,6 +450,35 @@ class OscillatorySynapseTheory:
         self.alpha = 0.1  # Learning rate
         self.gamma = 0.9  # Discount factor
         self.epsilon = 0.1  # Exploration rate
+
+    def _step_hrm(self, signal: torch.Tensor, dt: float = 0.02) -> float:
+        vec = signal.detach().flatten().cpu().numpy()
+        n = min(len(vec), self.hrm_state.state_vector.size)
+        if n > 0:
+            self.hrm_state.state_vector[:n] = 0.85 * self.hrm_state.state_vector[:n] + 0.15 * vec[:n]
+        self.hrm_state, self.last_hrm_metrics = self.hrm_engine.step(self.hrm_state, dt=dt)
+        return float(np.mean(self.hrm_state.field))
+
+    def _route_through_atlantean_hrm(self, signal: torch.Tensor, mode: str) -> torch.Tensor:
+        x = signal.to(self.device).flatten()
+        if x.numel() < self.field_size:
+            x = F.pad(x, (0, self.field_size - x.numel()))
+        else:
+            x = x[: self.field_size]
+
+        hrm_force = self._step_hrm(x)
+        spikes = self.atlantean.step(x, hrm_force=hrm_force, dt=0.01)
+        phi5 = self.atlantean.phi5[: self.field_size]
+
+        if mode == "adjust_syntropy":
+            out = 0.6 * spikes + 0.4 * torch.tanh(phi5)
+        elif mode == "penalize_variance":
+            out = spikes - 0.1 * torch.var(spikes)
+        else:
+            out = spikes
+
+        self.field = self.atlantean.current_field()
+        return out
 
     def generate_synthetic_data(self, num_samples: int = 100) -> torch.Tensor:
         return torch.randn(num_samples, self.field.size(0), device=self.device) * 0.1
@@ -306,7 +512,7 @@ class OscillatorySynapseTheory:
             )
 
     def train(self, synthetic_data: torch.Tensor, streamed_text: Optional[str] = None, epochs: int = 10) -> float:
-        logger.info("Starting spiking neural network training...")
+        logger.info("Starting Atlantean-HRM routed training...")
         total_reward = 0
         for epoch in range(epochs):
             self.optimizer1.zero_grad()
@@ -356,8 +562,14 @@ class OscillatorySynapseTheory:
                 reward = 1.0 / (1.0 + loss.item())
                 total_reward += reward
                 self.update_q_table(reward, state, action)
-            total_loss /= (len(synthetic_data) + (1 if streamed_text else 0) + (1 if received_state is not None else 0))
-            total_loss.backward()
+            denom = (len(synthetic_data) + (1 if streamed_text else 0) + (1 if received_state is not None else 0))
+            total_loss = total_loss / max(1, denom)
+
+            # Keep lightweight gradient flow for optimizer/lr compatibility.
+            reg = 1e-4 * (
+                self.nn1.gain.pow(2) + self.nn2.gain.pow(2) + self.nn3.gain.pow(2)
+            )
+            (total_loss + reg).backward()
             self.optimizer1.step()
             self.optimizer2.step()
             self.optimizer3.step()
@@ -379,15 +591,32 @@ class OscillatorySynapseTheory:
             'nn2': self.nn2.state_dict(),
             'nn3': self.nn3.state_dict(),
             'field': self.field,
-            'q_table': self.q_table
+            'q_table': self.q_table,
+            'phi1': self.atlantean.phi1,
+            'phi5': self.atlantean.phi5,
+            'Phi': self.atlantean.Phi,
+            'hrm_state_vector': torch.tensor(self.hrm_state.state_vector, dtype=torch.float32),
         }, path)
         logger.info(f"Saved neural network weights to {path}")
     
     def load_weights(self, path: str = "nn_weights.pth"):
-        checkpoint = torch.load(path)
-        self.nn1.load_state_dict(checkpoint['nn1'])
-        self.nn2.load_state_dict(checkpoint['nn2'])
-        self.nn3.load_state_dict(checkpoint['nn3'])
-        self.field = checkpoint['field']
+        checkpoint = torch.load(path, map_location=self.device)
+        if 'nn1' in checkpoint:
+            self.nn1.load_state_dict(checkpoint['nn1'], strict=False)
+        if 'nn2' in checkpoint:
+            self.nn2.load_state_dict(checkpoint['nn2'], strict=False)
+        if 'nn3' in checkpoint:
+            self.nn3.load_state_dict(checkpoint['nn3'], strict=False)
+        self.field = checkpoint.get('field', self.field)
         self.q_table = checkpoint.get('q_table', {})
+        if 'phi1' in checkpoint:
+            self.atlantean.phi1 = checkpoint['phi1'].to(self.device)
+        if 'phi5' in checkpoint:
+            self.atlantean.phi5 = checkpoint['phi5'].to(self.device)
+        if 'Phi' in checkpoint:
+            self.atlantean.Phi = checkpoint['Phi'].to(self.device)
+        if 'hrm_state_vector' in checkpoint:
+            vec = checkpoint['hrm_state_vector'].detach().cpu().numpy()
+            n = min(len(vec), self.hrm_state.state_vector.size)
+            self.hrm_state.state_vector[:n] = vec[:n]
         logger.info(f"Loaded neural network weights from {path}")

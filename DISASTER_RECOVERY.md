@@ -35,10 +35,10 @@ tar -czf models_backup_$(date +%Y%m%d_%H%M%S).tar.gz /app/models/
 **2. Database Backup**
 ```bash
 # Daily backup (SQLite)
-0 2 * * * sqlite3 /app/dashboard_state/quadra_matrix.db ".backup '/app/backups/db_backup_$(date +%Y%m%d).db'"
+0 2 * * * sqlite3 /app/dashboard_state/atlantean_hrm.db ".backup '/app/backups/db_backup_$(date +%Y%m%d).db'"
 
 # Manual backup
-sqlite3 /app/dashboard_state/quadra_matrix.db ".backup '/app/backups/db_backup.db'"
+sqlite3 /app/dashboard_state/atlantean_hrm.db ".backup '/app/backups/db_backup.db'"
 ```
 
 **3. State Directory Backup**
@@ -106,10 +106,10 @@ sqlite3 db_backup.db "PRAGMA integrity_check;" | grep "ok" && echo "✅ Database
 4. **Check logs for root cause**
    ```bash
    # Review application logs
-   tail -f /app/logs/quadra_matrix.log
+   tail -f /app/logs/atlantean_hrm.log
    
    # Check for errors
-   grep -i error /app/logs/quadra_matrix.log | tail -50
+   grep -i error /app/logs/atlantean_hrm.log | tail -50
    ```
 
 **Estimated Recovery Time**: 5-10 minutes
@@ -131,19 +131,19 @@ sqlite3 db_backup.db "PRAGMA integrity_check;" | grep "ok" && echo "✅ Database
 
 2. **Verify database corruption**
    ```bash
-   sqlite3 /app/dashboard_state/quadra_matrix.db "PRAGMA integrity_check;"
+   sqlite3 /app/dashboard_state/atlantean_hrm.db "PRAGMA integrity_check;"
    ```
 
 3. **Restore from backup**
    ```bash
    # Backup current (corrupted) database
-   cp /app/dashboard_state/quadra_matrix.db /app/backups/corrupted_$(date +%Y%m%d_%H%M%S).db
+   cp /app/dashboard_state/atlantean_hrm.db /app/backups/corrupted_$(date +%Y%m%d_%H%M%S).db
    
    # Restore from most recent backup
-   cp /app/backups/db_backup_YYYYMMDD.db /app/dashboard_state/quadra_matrix.db
+   cp /app/backups/db_backup_YYYYMMDD.db /app/dashboard_state/atlantean_hrm.db
    
    # Verify restored database
-   sqlite3 /app/dashboard_state/quadra_matrix.db "PRAGMA integrity_check;"
+   sqlite3 /app/dashboard_state/atlantean_hrm.db "PRAGMA integrity_check;"
    ```
 
 4. **Restart application**
@@ -173,7 +173,7 @@ sqlite3 db_backup.db "PRAGMA integrity_check;" | grep "ok" && echo "✅ Database
    ```bash
    ls -la /app/models/
    # Check model registry
-   sqlite3 /app/dashboard_state/quadra_matrix.db "SELECT * FROM model_versions;"
+   sqlite3 /app/dashboard_state/atlantean_hrm.db "SELECT * FROM model_versions;"
    ```
 
 2. **Restore from backup**
@@ -236,7 +236,7 @@ sqlite3 db_backup.db "PRAGMA integrity_check;" | grep "ok" && echo "✅ Database
    tar -xzf /remote-backup/models_backup_latest.tar.gz -C ./
    
    # Restore database
-   cp /remote-backup/db_backup_latest.db ./dashboard_state/quadra_matrix.db
+   cp /remote-backup/db_backup_latest.db ./dashboard_state/atlantean_hrm.db
    
    # Restore state
    tar -xzf /remote-backup/state_backup_latest.tar.gz -C ./

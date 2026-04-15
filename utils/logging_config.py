@@ -36,7 +36,7 @@ class ColoredFormatter(logging.Formatter):
 def setup_logging(
     log_level: str = 'INFO',
     log_dir: Optional[Path] = None,
-    app_name: str = 'quadra_matrix',
+    app_name: str = 'atlantean_hrm',
     enable_console: bool = True,
     enable_file: bool = True,
     enable_colors: bool = True,

@@ -24,9 +24,9 @@ fi
 
 # Backup database
 echo "💾 Backing up database..."
-if [ -f "/app/dashboard_state/quadra_matrix.db" ]; then
+if [ -f "/app/dashboard_state/atlantean_hrm.db" ]; then
     mkdir -p "${TEMP_DIR}/database"
-    sqlite3 /app/dashboard_state/quadra_matrix.db ".backup '${TEMP_DIR}/database/quadra_matrix.db'"
+    sqlite3 /app/dashboard_state/atlantean_hrm.db ".backup '${TEMP_DIR}/database/atlantean_hrm.db'"
 fi
 
 # Backup dashboard state

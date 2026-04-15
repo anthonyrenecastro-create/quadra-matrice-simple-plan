@@ -16,25 +16,25 @@ logger = logging.getLogger(__name__)
 
 # Request metrics
 http_requests_total = Counter(
-    'quadra_matrix_http_requests_total',
+    'atlantean_hrm_http_requests_total',
     'Total HTTP requests',
     ['method', 'endpoint', 'status']
 )
 
 http_request_duration_seconds = Histogram(
-    'quadra_matrix_http_request_duration_seconds',
+    'atlantean_hrm_http_request_duration_seconds',
     'HTTP request latency',
     ['method', 'endpoint']
 )
 
 # WebSocket metrics
 websocket_connections = Gauge(
-    'quadra_matrix_websocket_connections',
+    'atlantean_hrm_websocket_connections',
     'Current WebSocket connections'
 )
 
 websocket_messages_total = Counter(
-    'quadra_matrix_websocket_messages_total',
+    'atlantean_hrm_websocket_messages_total',
     'Total WebSocket messages',
     ['event', 'direction']
 )
@@ -45,45 +45,45 @@ websocket_messages_total = Counter(
 
 # Training metrics
 training_batches_total = Counter(
-    'quadra_matrix_training_batches_total',
+    'atlantean_hrm_training_batches_total',
     'Total training batches processed'
 )
 
 training_loss = Gauge(
-    'quadra_matrix_training_loss',
+    'atlantean_hrm_training_loss',
     'Current training loss'
 )
 
 training_reward = Gauge(
-    'quadra_matrix_training_reward',
+    'atlantean_hrm_training_reward',
     'Current training reward'
 )
 
 training_field_variance = Gauge(
-    'quadra_matrix_training_field_variance',
+    'atlantean_hrm_training_field_variance',
     'Current field variance'
 )
 
 training_duration_seconds = Histogram(
-    'quadra_matrix_training_duration_seconds',
+    'atlantean_hrm_training_duration_seconds',
     'Training batch duration'
 )
 
 # Model metrics
 model_inference_duration_seconds = Histogram(
-    'quadra_matrix_model_inference_duration_seconds',
+    'atlantean_hrm_model_inference_duration_seconds',
     'Model inference latency',
     ['model_version']
 )
 
 model_predictions_total = Counter(
-    'quadra_matrix_model_predictions_total',
+    'atlantean_hrm_model_predictions_total',
     'Total model predictions',
     ['model_version']
 )
 
 active_training_sessions = Gauge(
-    'quadra_matrix_active_training_sessions',
+    'atlantean_hrm_active_training_sessions',
     'Number of active training sessions'
 )
 
@@ -93,43 +93,43 @@ active_training_sessions = Gauge(
 
 # System state
 system_state = Gauge(
-    'quadra_matrix_system_state',
+    'atlantean_hrm_system_state',
     'System state (1=initialized, 2=training, 0=stopped)'
 )
 
 field_size = Gauge(
-    'quadra_matrix_field_size',
+    'atlantean_hrm_field_size',
     'Current field size'
 )
 
 iteration_count = Gauge(
-    'quadra_matrix_iteration_count',
+    'atlantean_hrm_iteration_count',
     'Total iterations processed'
 )
 
 # Database metrics
 database_operations_total = Counter(
-    'quadra_matrix_database_operations_total',
+    'atlantean_hrm_database_operations_total',
     'Total database operations',
     ['operation', 'table']
 )
 
 database_operation_duration_seconds = Histogram(
-    'quadra_matrix_database_operation_duration_seconds',
+    'atlantean_hrm_database_operation_duration_seconds',
     'Database operation latency',
     ['operation']
 )
 
 # Error metrics
 errors_total = Counter(
-    'quadra_matrix_errors_total',
+    'atlantean_hrm_errors_total',
     'Total errors',
     ['error_type', 'component']
 )
 
 # Application info
 app_info = Info(
-    'quadra_matrix_app',
+    'atlantean_hrm_app',
     'Application information'
 )
 

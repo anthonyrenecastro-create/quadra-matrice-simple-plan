@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 async def enhanced_training():
     """Run enhanced training with scaled parameters"""
-    from train_quadra_matrix import CognitionSimTrainer
+    from train_atlantean_hrm import CognitionSimTrainer
     
     print("\n" + "="*80)
     print("🚀 QUADRA MATRIX - ENHANCED TRAINING SESSION")
@@ -47,15 +47,15 @@ async def enhanced_training():
     print(f"   Final Loss: {metrics['rewards'][-1]:.4f}")
     
     # Save enhanced model
-    trainer.oscillator.save_weights("quadra_matrix_enhanced.pth")
-    print("\n💾 Enhanced model saved to: quadra_matrix_enhanced.pth")
+    trainer.oscillator.save_weights("atlantean_hrm_enhanced.pth")
+    print("\n💾 Enhanced model saved to: atlantean_hrm_enhanced.pth")
     
     return metrics
 
 
 async def multi_dataset_training():
     """Train on multiple datasets for robustness"""
-    from train_quadra_matrix import CognitionSimTrainer
+    from train_atlantean_hrm import CognitionSimTrainer
     
     print("\n" + "="*80)
     print("🌐 MULTI-DATASET TRAINING")
@@ -96,8 +96,8 @@ async def multi_dataset_training():
             print(f"   Final Reward: {metrics['rewards'][-1]:.4f}")
             
             # Save model for this dataset
-            trainer.oscillator.save_weights(f"quadra_matrix_{dataset_name}.pth")
-            print(f"   💾 Model saved: quadra_matrix_{dataset_name}.pth")
+            trainer.oscillator.save_weights(f"atlantean_hrm_{dataset_name}.pth")
+            print(f"   💾 Model saved: atlantean_hrm_{dataset_name}.pth")
             
         except Exception as e:
             print(f"\n⚠️  {display_name} failed: {e}")
@@ -118,7 +118,7 @@ async def multi_dataset_training():
 
 async def scaled_field_comparison():
     """Compare different field sizes to show scaling benefits"""
-    from train_quadra_matrix import CognitionSimTrainer
+    from train_atlantean_hrm import CognitionSimTrainer
     
     print("\n" + "="*80)
     print("🔬 FIELD SIZE SCALING EXPERIMENT")
@@ -224,9 +224,9 @@ async def main():
             print("="*80)
             print("\n✅ All experiments finished successfully!")
             print("\n📁 Generated files:")
-            print("   • quadra_matrix_enhanced.pth")
-            print("   • quadra_matrix_wikitext.pth")
-            print("   • quadra_matrix_tiny_shakespeare.pth")
+            print("   • atlantean_hrm_enhanced.pth")
+            print("   • atlantean_hrm_wikitext.pth")
+            print("   • atlantean_hrm_tiny_shakespeare.pth")
             print("   • training_metrics.json")
             print("   • training_metrics.png")
         else:

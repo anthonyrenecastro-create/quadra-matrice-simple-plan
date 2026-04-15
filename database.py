@@ -119,10 +119,10 @@ class Database:
         Initialize database connection
         
         Args:
-            database_url: SQLAlchemy database URL (default: sqlite:///quadra_matrix.db)
+            database_url: SQLAlchemy database URL (default: sqlite:///atlantean_hrm.db)
         """
         if database_url is None:
-            database_url = os.getenv('DATABASE_URL', 'sqlite:///quadra_matrix.db')
+            database_url = os.getenv('DATABASE_URL', 'sqlite:///atlantean_hrm.db')
         
         logger.info(f"Initializing database: {database_url}")
         

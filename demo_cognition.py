@@ -29,14 +29,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 try:
-    from quadra_matrix_spi import (
+    from atlantean_hrm_spi import (
         OscillatorySynapseTheory,
         NeuroplasticityManager,
         SymbolicPredictiveInterpreter,
         SymbolicConfig
     )
 except ImportError:
-    logger.error("Could not import CognitionSim components. Ensure quadra_matrix_spi.py is available.")
+    logger.error("Could not import CognitionSim components. Ensure atlantean_hrm_spi.py is available.")
     sys.exit(1)
 
 

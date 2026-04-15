@@ -8,8 +8,8 @@
 ## ✅ FUNCTIONING CORE (Keep These)
 
 ### 1. **Core ML/AI Engine** - ESSENTIAL
-- **[quadra_matrix_spi.py](quadra_matrix_spi.py)** (18KB) - Main AI architecture with spiking neural networks
-- **[quadra_matrix_gpu.py](quadra_matrix_gpu.py)** (16KB) - GPU acceleration implementation
+- **[atlantean_hrm_spi.py](atlantean_hrm_spi.py)** (18KB) - Main AI architecture with spiking neural networks
+- **[atlantean_hrm_gpu.py](atlantean_hrm_gpu.py)** (16KB) - GPU acceleration implementation
 - **quadra/** module (12 Python files) - Modularized core components:
   - `quadra/core/symbolic/interpreter.py` - Symbolic reasoning
   - `quadra/edge/inference_engine.py` - Edge deployment
@@ -17,13 +17,13 @@
   - `quadra/core/governance/policy_adapter.py` - Governance features
 
 ### 2. **Training Scripts** - FUNCTIONAL
-- **[train_quadra_matrix.py](train_quadra_matrix.py)** (28KB) - Primary training script
+- **[train_atlantean_hrm.py](train_atlantean_hrm.py)** (28KB) - Primary training script
 - **[train_multicore.py](train_multicore.py)** (12KB) - Multi-GPU training
 - **[train_wikitext.py](train_wikitext.py)** - WikiText dataset training
 - **[enhanced_train.py](enhanced_train.py)** (9KB) - Advanced training features
 - **Trained Models**: 
-  - `quadra_matrix_weights.pth` (194KB)
-  - `quadra_matrix_wikitext.pth` (193KB)
+  - `atlantean_hrm_weights.pth` (194KB)
+  - `atlantean_hrm_wikitext.pth` (193KB)
   - `training_metrics.json`, `training_metrics_wikitext.json`
 
 ### 3. **Web Applications** - WORKING
@@ -52,7 +52,7 @@
 
 ### 6. **Testing Suite** - COMPREHENSIVE
 - **tests/** (14 test files):
-  - `test_app.py`, `test_quadra_matrix.py`
+  - `test_app.py`, `test_atlantean_hrm.py`
   - `test_security.py`, `test_model_versioning.py`
   - `test_integration.py`, `test_stateful_architecture.py`
   - Coverage: `coverage.xml` present

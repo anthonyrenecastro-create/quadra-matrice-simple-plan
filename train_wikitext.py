@@ -34,7 +34,7 @@ async def main():
     
     try:
         # Import trainer
-        from train_quadra_matrix import CognitionSimTrainer
+        from train_atlantean_hrm import CognitionSimTrainer
         
         # Initialize trainer with moderate configuration for WikiText
         logger.info("Initializing CognitionSimTrainer with field_size=150...")
@@ -64,7 +64,7 @@ async def main():
         print(f"  • Total Training Batches: {len(metrics['rewards'])}")
         
         # Save trained model
-        save_path = "quadra_matrix_wikitext.pth"
+        save_path = "atlantean_hrm_wikitext.pth"
         logger.info(f"Saving model weights to {save_path}...")
         trainer.oscillator.save_weights(save_path)
         print(f"\n💾 Model saved to: {save_path}")

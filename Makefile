@@ -60,10 +60,10 @@ docker-logs:
 
 # Training & Dashboard
 train:
-	python train_quadra_matrix.py
+	python train_atlantean_hrm.py
 
 train-quick:
-	python train_quadra_matrix.py --num_batches 10 --batch_size 2
+	python train_atlantean_hrm.py --num_batches 10 --batch_size 2
 
 dashboard:
 	python app.py

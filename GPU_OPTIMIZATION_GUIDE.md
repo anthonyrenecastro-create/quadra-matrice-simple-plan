@@ -45,7 +45,7 @@ python train_multicore.py --mode benchmark
 
 ```bash
 # Quick GPU capabilities demo
-python quadra_matrix_gpu.py
+python atlantean_hrm_gpu.py
 ```
 
 ## 🔧 GPU Features
@@ -71,7 +71,7 @@ python quadra_matrix_gpu.py
 ### GPU Config Options
 
 ```python
-from quadra_matrix_gpu import GPUConfig
+from atlantean_hrm_gpu import GPUConfig
 
 # Auto-configure (recommended)
 config = get_optimal_config()
@@ -102,7 +102,7 @@ The system automatically adjusts batch size based on GPU memory:
 ### Basic GPU Training
 
 ```python
-from quadra_matrix_gpu import GPUOscillatorEngine, get_optimal_config
+from atlantean_hrm_gpu import GPUOscillatorEngine, get_optimal_config
 
 # Auto-configure
 config = get_optimal_config()
@@ -140,7 +140,7 @@ train_multi_core_cpu(num_processes=4, num_epochs=10)
 ### Benchmarking
 
 ```python
-from quadra_matrix_gpu import GPUOscillatorEngine, get_optimal_config
+from atlantean_hrm_gpu import GPUOscillatorEngine, get_optimal_config
 
 config = get_optimal_config()
 engine = GPUOscillatorEngine(field_size=100, config=config)
@@ -294,14 +294,14 @@ config.persistent_workers = True
 
 ### Old (CPU-only)
 ```python
-from quadra_matrix_spi import OscillatorySynapseTheory
+from atlantean_hrm_spi import OscillatorySynapseTheory
 
 oscillator = OscillatorySynapseTheory(field_size=100, device='cpu')
 ```
 
 ### New (GPU-optimized)
 ```python
-from quadra_matrix_gpu import GPUOscillatorEngine, get_optimal_config
+from atlantean_hrm_gpu import GPUOscillatorEngine, get_optimal_config
 
 config = get_optimal_config()
 engine = GPUOscillatorEngine(field_size=100, config=config)

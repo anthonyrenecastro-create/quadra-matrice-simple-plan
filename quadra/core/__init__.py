@@ -7,6 +7,8 @@ from .hrm import (
 	StateEngine,
 	CycleEngine,
 	OperatorEngine,
+	OptimizationEvaluator,
+	FeedbackShaper,
 	OptimizationEngine,
 	SimulationEngine,
 )
@@ -18,6 +20,8 @@ __all__ = [
 	"CycleEngine",
 	"TopologyEngine",
 	"OperatorEngine",
+	"OptimizationEvaluator",
+	"FeedbackShaper",
 	"OptimizationEngine",
 	"SimulationEngine",
 ]

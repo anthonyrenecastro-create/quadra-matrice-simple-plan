@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project implements a revolutionary AI architecture that combines **spiking neural networks**, **symbolic reasoning**, **neuroplasticity**, and **quantum-inspired field dynamics** to achieve exponentially faster training than traditional approaches.
+This project implements a revolutionary AI architecture that combines **spiking neural networks**, **symbolic reasoning**, **neuroplasticity**, **quantum-inspired field dynamics**, and a **Helical Recursive Manifold (HRM)** engine to achieve exponentially faster training than traditional approaches.
 
 > 📖 **New to CognitionSim?** See [DUAL_LANGUAGE_GLOSSARY.md](./DUAL_LANGUAGE_GLOSSARY.md) for a comprehensive guide that bridges **poetic vision** (the myth) with **mechanical precision** (the math). Each core concept is explained in dual languages for both inspiration and implementation.
 
@@ -15,6 +15,7 @@ Unlike standard LLMs that require massive compute resources, CognitionSim levera
 3. **Neuroplasticity Acceleration** - Learning rate increases exponentially with success
 4. **Symbolic Caching** - Prediction cache eliminates redundant computation
 5. **Spiking Neural Networks** - Temporal processing with biological efficiency
+6. **Helical Recursive Manifold (HRM)** - Topology-aware nonlinear field geometry grounds latent state in a coherent, self-organizing manifold
 
 ## Architecture Components
 
@@ -46,6 +47,29 @@ Unlike standard LLMs that require massive compute resources, CognitionSim levera
 - **Exponential Growth**: Success streak → learning rate boost
 - **Safety Bounds**: Capped at 10x speedup
 - **Stability Gating**: Only accelerates when field is stable
+
+### 6. Helical Recursive Manifold (`SimulationEngine` in `quadra/core/hrm/`)
+The HRM is a self-contained nonlinear dynamical system that provides a coherent latent substrate for all higher-level reasoning. It orchestrates seven tightly coupled sub-engines:
+
+- **`TopologyEngine`** - Genus-12 routing across 12 channels × 22 domains × 14 layers; topology advances each macro-cycle
+- **`FieldEngine`** - Solves the HRM nonlinear PDE (`∂φ/∂t = D∇²φ + aφ − b|φ|²φ − c∇⁴φ + λ(K*φ−φ) + g·source`) on a 12×12 grid
+- **`StateEngine`** - Evolves a 24-dimensional state vector via graph diffusion, logistic saturation, and coupling; derives **Guna weights** (tamas/rajas/sattva balance)
+- **`CycleEngine`** - Advances the macro-cycle angle `θ` with angular frequency `ω = 2π/120`
+- **`OperatorEngine`** - Applies channel-conditioned archetypal operators (smoothing, mixing, tanh saturation)
+- **`OptimizationEvaluator`** - Computes diagnostic objective `J(S, φ)` (fractal roughness, precision, stability, coherence, regularization)
+- **`FeedbackShaper`** - Injects optimization pressure into in-loop conditioning (field and state constraints) before local updates are integrated
+
+`OptimizationEngine` remains as a compatibility facade around `OptimizationEvaluator` + `FeedbackShaper`.
+
+**Explicit dependency map (runtime):**
+- `FieldEngine` depends on: `state`, `theta`, `topology`, `operators`, `phi_prev`
+- `StateEngine` depends on: `state_prev`, `phi`, `theta`, `topology`
+- `TopologyEngine` depends on: `state`, `phi`, `theta`
+- `OptimizationEvaluator` depends on: `state`, `phi`
+- `FeedbackShaper` depends on: all simulation diagnostics; feeds back into field/state constraints
+
+**HRM integration with the Symbolic Interpreter:**
+At each inference step, `StatefulSymbolicPredictiveInterpreter` runs an HRM simulation cycle and injects the resulting coherence, stability, and objective scalars plus a normalized 96-dimensional `latent_anchor` vector directly into the neural prediction head, grounding symbolic reasoning in the manifold's current geometric state.
 
 ## Training Performance
 
@@ -143,13 +167,13 @@ python -c "import nltk; nltk.download('punkt'); nltk.download('wordnet')"
 
 ### Full Training (100 batches)
 ```bash
-python train_quadra_matrix.py
+python train_atlantean_hrm.py
 ```
 
 ### Quick Test (20 batches)
 ```python
 import asyncio
-from train_quadra_matrix import CognitionSimTrainer
+from train_atlantean_hrm import CognitionSimTrainer
 
 async def quick_test():
     trainer = CognitionSimTrainer(field_size=100, device='cpu')
@@ -188,6 +212,7 @@ await trainer.train(
 - **Efficient parameters** (3 small SNNs + field state)
 - **CPU-friendly** (optimized for edge devices)
 - **Field-based processing** (holistic pattern recognition)
+- **Helical Recursive Manifold** (topology-aware latent geometry anchors every inference step)
 
 ## Theoretical Foundation
 
@@ -210,6 +235,16 @@ The system "grows faster as it learns":
 - Failure → gentle deceleration
 - Mimics biological learning curves
 
+### Helical Recursive Manifold (HRM)
+The HRM provides a self-organizing geometric substrate that the rest of the system anchors to. Instead of a flat latent space, reasoning unfolds over a curved, topology-routed manifold:
+
+- **Nonlinear field evolution** - PDE-governed diffusion with biharmonic damping, cubic saturation, and non-local convolution prevents mode collapse
+- **Genus-12 topology routing** - The macro-cycle angle `θ` determines which of 12 channels, 22 domains, and 14 layers is active, producing a helical trajectory through latent space
+- **24-D state vector** - Ring-coupled graph diffusion with logistic saturation tracks the system's phase across each traversal
+- **Guna balance** - Three emergent weights (tamas/rajas/sattva) derived from the state vector characterize the qualitative mode of each cycle
+- **Split optimization loop** - Evaluator computes diagnostics, while shaper injects pressure into field/state dynamics before each update step
+- **Latent anchor injection** - A normalized 96-D diagnostic vector is exported each step and fused with the symbolic prediction head, coupling geometric state to discrete inference
+
 ### Symbolic-Subsymbolic Integration
 Bridges the gap between:
 - Logic/reasoning (symbolic)
@@ -220,7 +255,7 @@ Bridges the gap between:
 
 After training:
 - `training_metrics.json` - All metrics in JSON format
-- `quadra_matrix_weights.pth` - Trained neural network weights
+- `atlantean_hrm_weights.pth` - Trained neural network weights
 - `training_metrics.png` - Visualization of 6 key metrics
 
 ## System Requirements
@@ -250,7 +285,7 @@ After training:
 ## Citation
 
 ```bibtex
-@software{quadra_matrix_ai,
+@software{atlantean_hrm_ai,
   title={CognitionSim: Exponential Training via Oscillatory Dynamics},
   author={Your Name},
   year={2025},

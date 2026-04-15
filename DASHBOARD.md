@@ -122,7 +122,7 @@ Adjust `field_size` in `SystemState.__init__()` (default: 100)
 - Try accessing via `http://127.0.0.1:5000`
 
 ### Training Errors
-- Verify `quadra_matrix_spi.py` is in the same directory
+- Verify `atlantean_hrm_spi.py` is in the same directory
 - Check all dependencies are installed
 - Review system logs in the dashboard
 

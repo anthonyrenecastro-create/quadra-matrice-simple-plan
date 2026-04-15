@@ -7,6 +7,8 @@ from .engine import (
     StateEngine,
     CycleEngine,
     OperatorEngine,
+    OptimizationEvaluator,
+    FeedbackShaper,
     OptimizationEngine,
     SimulationEngine,
 )
@@ -18,6 +20,8 @@ __all__ = [
     "StateEngine",
     "CycleEngine",
     "OperatorEngine",
+    "OptimizationEvaluator",
+    "FeedbackShaper",
     "OptimizationEngine",
     "SimulationEngine",
 ]

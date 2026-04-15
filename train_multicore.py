@@ -27,7 +27,7 @@ import threading
 from queue import Queue
 import json
 
-from quadra_matrix_gpu import GPUOscillatorEngine, GPUConfig, get_optimal_config
+from atlantean_hrm_gpu import GPUOscillatorEngine, GPUConfig, get_optimal_config
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

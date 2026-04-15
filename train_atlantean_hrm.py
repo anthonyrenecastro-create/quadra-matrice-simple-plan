@@ -13,7 +13,7 @@ import time
 import torch
 import torch.nn as nn
 from datasets import load_dataset
-from quadra_matrix_spi import (
+from atlantean_hrm_spi import (
     PatternModule,
     NeuroplasticityManager,
     SymbolicPredictiveInterpreter,
@@ -364,9 +364,9 @@ class CognitionSimTrainer:
                 logger.info("✅ Dataset loaded in streaming mode")
             else:
                 if dataset_config:
-                    dataset = load_dataset(dataset_name, dataset_config, split="train", trust_remote_code=True)
+                    dataset = load_dataset(dataset_name, dataset_config, split="train")
                 else:
-                    dataset = load_dataset(dataset_name, split="train", trust_remote_code=True)
+                    dataset = load_dataset(dataset_name, split="train")
                 logger.info(f"✅ Dataset loaded: {len(dataset)} samples")
             
         except Exception as e:
@@ -508,8 +508,8 @@ class CognitionSimTrainer:
         logger.info("💾 Metrics saved to training_metrics.json")
         
         # Save neural network weights
-        self.oscillator.save_weights("quadra_matrix_weights.pth")
-        logger.info("💾 Model weights saved to quadra_matrix_weights.pth")
+        self.oscillator.save_weights("atlantean_hrm_weights.pth")
+        logger.info("💾 Model weights saved to atlantean_hrm_weights.pth")
     
     def plot_metrics(self):
         """Generate visualization of training metrics"""

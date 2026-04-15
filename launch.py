@@ -31,7 +31,7 @@ async def quick_demo():
     print("\n🚀 Starting Quick Demo...")
     print("This will train on WikiText-2 for 20 batches (~2 minutes)\n")
     
-    from train_quadra_matrix import CognitionSimTrainer
+    from train_atlantean_hrm import CognitionSimTrainer
     
     trainer = CognitionSimTrainer(field_size=100, device='cpu')
     await trainer.train(
@@ -49,7 +49,7 @@ async def full_training():
     print("\n📊 Starting Full Training...")
     print("This will train on WikiText-2 for 100 batches (~10 minutes)\n")
     
-    from train_quadra_matrix import CognitionSimTrainer
+    from train_atlantean_hrm import CognitionSimTrainer
     
     trainer = CognitionSimTrainer(field_size=100, device='cpu')
     await trainer.train(
@@ -63,7 +63,7 @@ async def full_training():
     print("Results saved to:")
     print("  - training_metrics.json")
     print("  - training_metrics.png")
-    print("  - quadra_matrix_weights.pth")
+    print("  - atlantean_hrm_weights.pth")
 
 def show_results():
     """Display training results"""
@@ -104,7 +104,7 @@ async def custom_training():
     
     print("\n🚀 Starting custom training...\n")
     
-    from train_quadra_matrix import CognitionSimTrainer
+    from train_atlantean_hrm import CognitionSimTrainer
     
     trainer = CognitionSimTrainer(field_size=field_size, device=device)
     await trainer.train(
@@ -123,15 +123,15 @@ async def test_model():
     import torch
     import os
     
-    if not os.path.exists('quadra_matrix_weights.pth'):
+    if not os.path.exists('atlantean_hrm_weights.pth'):
         print("❌ No trained model found. Please train first (option 1 or 2).")
         return
     
     print("Loading model...")
-    from quadra_matrix_spi import OscillatorySynapseTheory
+    from atlantean_hrm_spi import OscillatorySynapseTheory
     
     oscillator = OscillatorySynapseTheory(field_size=100, device='cpu')
-    oscillator.load_weights('quadra_matrix_weights.pth')
+    oscillator.load_weights('atlantean_hrm_weights.pth')
     
     print("✅ Model loaded successfully!\n")
     
@@ -181,7 +181,7 @@ def show_help():
     print("💻 Command Line Usage:")
     print("-" * 80)
     print("  python launch.py              # Interactive menu (this)")
-    print("  python train_quadra_matrix.py # Direct training (100 batches)")
+    print("  python train_atlantean_hrm.py # Direct training (100 batches)")
     print("  python results_summary.py     # Show results summary\n")
     
     print("🔧 System Requirements:")

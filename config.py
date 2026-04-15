@@ -55,8 +55,8 @@ class Config:
     
     # Model Artifacts
     OSCILLATOR_WEIGHTS_FILE = 'oscillator_weights.pth'
-    QUADRA_MATRIX_ENHANCED_FILE = 'quadra_matrix_enhanced.pth'
-    QUADRA_MATRIX_WEIGHTS_FILE = 'quadra_matrix_weights.pth'
+    ATLANTEAN_HRM_ENHANCED_FILE = 'atlantean_hrm_enhanced.pth'
+    ATLANTEAN_HRM_WEIGHTS_FILE = 'atlantean_hrm_weights.pth'
     TRAINING_METRICS_FILE = 'training_metrics.json'
     
     # Socket.IO
@@ -98,7 +98,7 @@ class ProductionConfig(Config):
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'https://yourdomain.com')  # Restrict in production
     
     # Database
-    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///quadra_matrix.db')
+    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///atlantean_hrm.db')
     
     # Require secret key in production
     @classmethod

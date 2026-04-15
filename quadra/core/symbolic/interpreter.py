@@ -644,7 +644,11 @@ class SymbolicReasoner:
         signal[2] = float(len(concepts)) / 10.0
         signal[3] = float(len(text)) / 256.0
         signal[4] = float(sum(ord(ch) for ch in text[:32]) % 997) / 997.0 if text else 0.0
-        self.hrm_state.state_vector = 0.85 * self.hrm_state.state_vector + 0.15 * signal
+        blend = 0.15
+        if bool(getattr(self.hrm_state, 'collapse_flag', False)):
+            signal = 0.65 * signal
+            blend = 0.08
+        self.hrm_state.state_vector = (1.0 - blend) * self.hrm_state.state_vector + blend * signal
     
     def get_hrm_snapshot(self) -> Dict[str, Any]:
         if not self.hrm_state:
@@ -660,6 +664,10 @@ class SymbolicReasoner:
             'objective': float(self.hrm_state.last_metrics.get('objective', 0.0)),
             'coherence': float(self.hrm_state.last_metrics.get('f_coherence', 0.0)),
             'stability': float(self.hrm_state.last_metrics.get('f_stability', 0.0)),
+            'collapse_flag': bool(getattr(self.hrm_state, 'collapse_flag', False)),
+            'collapse_energy': float(getattr(self.hrm_state, 'collapse_energy', 0.0)),
+            'collapse_memory_size': len(getattr(self.hrm_state, 'collapse_memory', [])),
+            'collapse_threshold': float(getattr(self.hrm_engine, 'E_crit', 0.0)) if self.hrm_engine else 0.0,
         }
     
     def interpret(self, neural_output: torch.Tensor, concepts: List[str], text: str = "") -> str:
@@ -692,6 +700,8 @@ class SymbolicReasoner:
                     hrm_metrics = self._last_hrm_metrics
 
             neural_magnitude = torch.norm(neural_output).item()
+            if self.hrm_state is not None and bool(getattr(self.hrm_state, 'collapse_flag', False)):
+                neural_magnitude *= 0.7
             if self.hrm_state is not None:
                 manifold_summary = (
                     f"HRM(theta={self.hrm_state.theta:.3f}, ch={self.hrm_state.channel}, "

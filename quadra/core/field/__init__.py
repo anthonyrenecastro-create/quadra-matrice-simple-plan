@@ -20,8 +20,18 @@ from .ift_engine import (
     FieldEngine,
     IFTEnhancedOscillator
 )
+from .syntropy_field import SyntropyField
+from .field_nn import FieldUpdateNN, SyntropyNN, FeedbackNN
+from .chaos import ChaosController
+from .governance import Governance
 
 __all__ = [
     'FieldEngine',
     'IFTEnhancedOscillator',
+    'SyntropyField',
+    'FieldUpdateNN',
+    'SyntropyNN',
+    'FeedbackNN',
+    'ChaosController',
+    'Governance',
 ]

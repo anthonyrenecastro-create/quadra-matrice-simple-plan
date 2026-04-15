@@ -101,7 +101,7 @@ async def run_training():
     
     try:
         logger.info("Initializing CognitionSimTrainer...")
-        from train_quadra_matrix import CognitionSimTrainer
+        from train_atlantean_hrm import CognitionSimTrainer
         
         training_state['status'] = 'training'
         
@@ -186,7 +186,7 @@ async def run_training():
         training_state['status'] = 'saving'
         
         # Save model
-        save_path = "quadra_matrix_wikitext.pth"
+        save_path = "atlantean_hrm_wikitext.pth"
         trainer.oscillator.save_weights(save_path)
         logger.info(f"Model saved to {save_path}")
         
