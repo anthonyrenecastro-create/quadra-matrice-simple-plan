@@ -328,10 +328,6 @@ CognitionSim speaks in two tongues—the **poetic language of consciousness** (m
 
 **Start here:** [DUAL_LANGUAGE_QUICK_REF.md](./DUAL_LANGUAGE_QUICK_REF.md) for instant translations
 
-## License
-
-MIT License - See LICENSE file for details
-
 ## Contact
 
 For questions, collaborations, or bug reports:

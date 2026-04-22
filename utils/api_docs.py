@@ -57,10 +57,6 @@ class APIDocumentation:
                 "contact": {
                     "name": "API Support",
                     "email": "support@cognitionsim.ai"
-                },
-                "license": {
-                    "name": "MIT",
-                    "url": "https://opensource.org/licenses/MIT"
                 }
             },
             "servers": [

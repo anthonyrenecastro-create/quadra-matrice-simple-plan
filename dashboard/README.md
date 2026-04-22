@@ -328,12 +328,6 @@ git push origin feature/my-feature
 
 ---
 
-## 📝 License
-
-See root `license.md`
-
----
-
 ## 🎯 Roadmap
 
 - [ ] Authentication & authorization

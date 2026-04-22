@@ -445,5 +445,4 @@ npm run build
 ---
 
 **Last Updated**: 2025-01-XX  
-**Maintainer**: CognitionSim Team  
-**License**: See root `license.md`
+**Maintainer**: CognitionSim Team

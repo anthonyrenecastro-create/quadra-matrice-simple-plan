@@ -405,6 +405,3 @@ When adding new features:
 4. Create pull request
 5. CI/CD will validate changes
 
-## 📄 License
-
-See LICENSE file for details.

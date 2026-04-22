@@ -65,7 +65,6 @@
 
 ### 8. **Essential Documentation** - KEEP
 - **[README.md](README.md)** (273 lines) - Main project documentation
-- **[LICENSE.md](license.md)** - Legal requirement
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Production deployment guide
 - **[GPU_OPTIMIZATION_GUIDE.md](GPU_OPTIMIZATION_GUIDE.md)** - GPU setup
 - **[DISASTER_RECOVERY.md](DISASTER_RECOVERY.md)** - Business continuity
@@ -169,7 +168,7 @@
 - ✅ Infrastructure: `k8s/`, `scripts/`, `alembic/`
 - ✅ Trained models: `*.pth`, `*.json` metrics
 - ✅ Dashboard: `dashboard/`, `templates/`
-- ✅ **Core Docs (8-10 files)**: README.md, LICENSE.md, DEPLOYMENT.md, GPU_OPTIMIZATION_GUIDE.md, DISASTER_RECOVERY.md, NEURAL_COMMAND_CENTER.md
+- ✅ **Core Docs (8-10 files)**: README.md, DEPLOYMENT.md, GPU_OPTIMIZATION_GUIDE.md, DISASTER_RECOVERY.md, NEURAL_COMMAND_CENTER.md
 
 ### **Archive/Delete (Excess - 40-50+ files)**:
 - ❌ All `*_SUMMARY.md` files (15+)
@@ -191,12 +190,11 @@
 ### Option 1: **Conservative Consolidation**
 Create **ONE comprehensive documentation file** that replaces all summaries:
 - `DOCUMENTATION.md` - Complete reference (merge all summaries/guides)
-- Keep only: README.md, LICENSE.md, DEPLOYMENT.md, GPU_OPTIMIZATION_GUIDE.md, DOCUMENTATION.md
+- Keep only: README.md, DEPLOYMENT.md, GPU_OPTIMIZATION_GUIDE.md, DOCUMENTATION.md
 
 ### Option 2: **Minimal Documentation**
 Keep only what's needed for new users and deployment:
 - `README.md` - Getting started, quick start, core concepts
-- `LICENSE.md` - Legal
 - `DEPLOYMENT.md` - Production deployment
 - `API_REFERENCE.md` - API documentation (consolidate technical details)
 

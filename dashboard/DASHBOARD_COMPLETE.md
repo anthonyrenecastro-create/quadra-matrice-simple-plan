@@ -491,5 +491,4 @@ You now have a **production-ready** Neural Command Center dashboard with:
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: 2025-01-XX  
-**License**: See root `license.md`
+**Last Updated**: 2025-01-XX

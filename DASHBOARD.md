@@ -162,5 +162,3 @@ Adjust `field_size` in `SystemState.__init__()` (default: 100)
 └─────────────────────────────────────────────┘
 ```
 
-## License
-Same as CognitionSim A.I. project
