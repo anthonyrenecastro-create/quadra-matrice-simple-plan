@@ -89,20 +89,26 @@ class NeuroplasticityManager:
         self.syntropy_engine = syntropy_engine
         self.data_queue = deque(maxlen=100)
         self.stability_threshold = 0.05
+        self.update_counter = 0
 
-    async def learn_async(self, streamed_text: str):
+    async def learn_async(self, streamed_text: str, train_every: int = 8):
         feature_vector = self.oscillator.process_streamed_data(streamed_text)
         self.data_queue.append(feature_vector)
-        synthetic_data = self.oscillator.generate_synthetic_data(num_samples=10)
-        reward = self.oscillator.train(synthetic_data, streamed_text, epochs=5)
+
         field_update = np.mean([v.cpu().numpy() for v in self.data_queue], axis=0)
         self.core_field.update_with_vibrational_mode(field_update)
+
         field_var = torch.var(self.core_field.get_state()).item()
+
+        # Only do expensive inner training occasionally.
+        self.update_counter += 1
+        if self.update_counter % train_every == 0 and field_var > self.stability_threshold:
+            synthetic_data = self.oscillator.generate_synthetic_data(num_samples=4)
+            reward = self.oscillator.train(synthetic_data, streamed_text, epochs=1)
+            self.oscillator.update_q_table(reward)
+
         if field_var > self.stability_threshold:
-            logger.info(f"High variance ({field_var:.4f}) detected. Reducing input rate.")
-            await asyncio.sleep(2)
-        logger.info(f"Neuroplasticity update completed. Reward: {reward:.4f}")
-        self.oscillator.update_q_table(reward)
+            await asyncio.sleep(0)
 
     def regulate_syntropy(self):
         for i in range(self.syntropy_engine.num_fields):
@@ -647,6 +653,124 @@ class _OscillatorProxyNN(nn.Module):
         out = self.forward(field)
         return out - 0.1 * torch.var(out)
 
+
+def chaos_regularizer(field: torch.Tensor) -> torch.Tensor:
+    """Penalize high-frequency chaos and broadband variance in the field."""
+    x = field.flatten()
+    if x.numel() < 8:
+        return torch.tensor(0.0, device=field.device)
+
+    fft = torch.fft.rfft(x)
+    power = torch.abs(fft) ** 2
+
+    # Penalize high-frequency energy
+    cutoff = int(0.6 * power.numel())
+    high_freq_penalty = power[cutoff:].mean() if cutoff < power.numel() else 0.0
+
+    # Penalize broadband variance
+    var_penalty = torch.var(field)
+
+    return 0.1 * var_penalty + 0.05 * high_freq_penalty
+
+
+# --- Free Energy Field Model (Thermodynamic Evolution) ---
+class FreeEnergyFieldModel:
+    """Evolves field according to gradient-flow PDE for phase field dynamics."""
+    def __init__(self, nfields: int = 2, H: int = 32, W: int = 32, device: str = 'cpu'):
+        self.device = torch.device(device)
+        self.nfields = nfields
+        self.H, self.W = H, W
+        self.phi = torch.randn(nfields, H, W, device=self.device) * 0.05
+
+        self.alpha = torch.tensor([0.02] * nfields, device=self.device)
+        self.beta = torch.tensor([0.002] * nfields, device=self.device)
+        self.r = torch.tensor([-0.35] * nfields, device=self.device)
+        self.u = torch.tensor([1.0] * nfields, device=self.device)
+        self.lam_shell = torch.tensor([4.0] * nfields, device=self.device)
+
+        self.q_star = 3.5
+        self.delta_shell = 0.45
+
+    def laplacian(self, x):
+        """Compute Laplacian with periodic boundary conditions."""
+        return (
+            torch.roll(x, 1, dims=-2) + torch.roll(x, -1, dims=-2) +
+            torch.roll(x, 1, dims=-1) + torch.roll(x, -1, dims=-1) -
+            4.0 * x
+        )
+
+    def biharmonic(self, x):
+        """Compute ∇⁴ (4th order Laplacian)."""
+        return self.laplacian(self.laplacian(x))
+
+    def sixth_order(self, x):
+        """Compute ∇⁶ (6th order Laplacian)."""
+        return self.laplacian(self.biharmonic(x))
+
+    def potential_prime(self, phi, k):
+        """Derivative of potential: V'(ϕ) = r*ϕ + u*ϕ³."""
+        return self.r[k] * phi + self.u[k] * phi ** 3
+
+    def cubic_coupling(self):
+        """Cubic coupling between fields."""
+        total = torch.sum(self.phi, dim=0, keepdim=True)
+        return 0.02 * self.phi * total
+
+    def shell_penalty_real(self, phi):
+        """Approximate shell operator penalty in real space."""
+        lap = self.laplacian(phi)
+        return lap * lap.mean()
+
+    def functional_derivative(self):
+        """Compute δF/δϕ (functional derivative of free energy)."""
+        C = self.cubic_coupling()
+        dF = torch.zeros_like(self.phi)
+
+        for k in range(self.nfields):
+            dF[k] = (
+                -self.laplacian(self.phi[k])
+                + self.potential_prime(self.phi[k], k)
+                + 2.0 * self.alpha[k] * self.biharmonic(self.phi[k])
+                - 2.0 * self.beta[k] * self.sixth_order(self.phi[k])
+                + C[k]
+                + self.lam_shell[k] * self.shell_penalty_real(self.phi[k])
+            )
+        return dF
+
+    def step(self, dt: float = 1e-2, mobility: float = 1.0):
+        """Gradient-flow evolution: ∂_t ϕ = -M * δF/δϕ."""
+        dF = self.functional_derivative()
+        self.phi = self.phi - dt * mobility * dF
+        self.phi = torch.clamp(self.phi, -4.0, 4.0)
+        return self.phi
+
+
+def free_energy(phi_model: FreeEnergyFieldModel) -> torch.Tensor:
+    """
+    Compute free energy functional:
+    F[ϕ] = ∫[ 0.5*|∇ϕ|² + 0.5*r*ϕ² + 0.25*u*ϕ⁴ + α*|∇²ϕ|² + β*|∇⁴ϕ|² ]
+    """
+    phi = phi_model.phi
+    energy = torch.tensor(0.0, device=phi_model.device)
+
+    for k in range(phi_model.nfields):
+        # Gradient energy
+        grad_x = torch.roll(phi[k], -1, dims=-1) - phi[k]
+        grad_y = torch.roll(phi[k], -1, dims=-2) - phi[k]
+        energy = energy + 0.5 * (grad_x ** 2 + grad_y ** 2).mean()
+
+        # Potential energy
+        energy = energy + 0.5 * phi_model.r[k] * (phi[k] ** 2).mean()
+        energy = energy + 0.25 * phi_model.u[k] * (phi[k] ** 4).mean()
+
+        # Higher-order regularization
+        lap = phi_model.laplacian(phi[k])
+        energy = energy + phi_model.alpha[k] * (lap ** 2).mean()
+        energy = energy + phi_model.beta[k] * (phi_model.laplacian(lap) ** 2).mean()
+
+    return energy
+
+
 # --- Core Theoretical Engines ---
 class OscillatorySynapseTheory:
     def __init__(self, field_size: int = 100, device: str = 'cpu'):
@@ -671,6 +795,17 @@ class OscillatorySynapseTheory:
         self.optimizer_interaction = optim.Adam(self.atlantean.interaction_coupler.parameters(), lr=0.001)
         self.balanced = False
         self.message_queue = deque(maxlen=10)
+        
+        # Free energy field model for thermodynamic evolution
+        field_grid_size = int(np.ceil(np.sqrt(self.field_size)))
+        self.free_energy_model = FreeEnergyFieldModel(
+            nfields=2, 
+            H=field_grid_size, 
+            W=field_grid_size, 
+            device=device
+        )
+        self.prev_free_energy = free_energy(self.free_energy_model).detach()
+        
         # Q-learning setup
         self.q_table = {}  # State-action value table
         self.actions = ['update_field', 'adjust_syntropy', 'penalize_variance']
@@ -741,15 +876,22 @@ class OscillatorySynapseTheory:
             )
 
     def train(self, synthetic_data: torch.Tensor, streamed_text: Optional[str] = None, epochs: int = 10) -> float:
-        logger.info("Starting Atlantean-HRM routed training...")
+        logger.info("Starting Atlantean-HRM routed training with free energy descent...")
         total_reward = 0
         for epoch in range(epochs):
             self.optimizer1.zero_grad()
             self.optimizer2.zero_grad()
             self.optimizer3.zero_grad()
             self.optimizer_interaction.zero_grad()
+            
+            # Store free energy before evolution step
+            prev_F = free_energy(self.free_energy_model).detach()
+            
             total_loss = 0
+            task_loss = 0
             state = self.get_state_key(self.field)
+            epoch_reward = 0.0
+            
             for data in synthetic_data:
                 action = self.choose_action(state)
                 if action == 'update_field':
@@ -758,12 +900,18 @@ class OscillatorySynapseTheory:
                     field = self.nn2.adjust_syntropy(data)
                 else:
                     field = self.nn3.penalize_variance(data)
-                loss = torch.var(field) + torch.abs(torch.mean(field) - 0.5)
-                total_loss += loss
-                reward = 1.0 / (1.0 + loss.item())  # Reward inversely proportional to loss
-                total_reward += reward
-                self.update_q_table(reward, state, action)
+                
+                # Task loss: variance reduction + mean centering + chaos regularizer
+                task_loss_step = (
+                    torch.var(field)
+                    + torch.abs(torch.mean(field) - 0.5)
+                    + chaos_regularizer(field)
+                )
+                task_loss += task_loss_step
+                
+                # Energy descent reward signal
                 state = self.get_state_key(field)
+            
             if streamed_text:
                 streamed_data = self.process_streamed_data(streamed_text)
                 action = self.choose_action(state)
@@ -773,11 +921,15 @@ class OscillatorySynapseTheory:
                     field = self.nn2.adjust_syntropy(streamed_data)
                 else:
                     field = self.nn3.penalize_variance(streamed_data)
-                loss = torch.var(field) + torch.abs(torch.mean(field) - 0.5)
-                total_loss += loss
-                reward = 1.0 / (1.0 + loss.item())
-                total_reward += reward
-                self.update_q_table(reward, state, action)
+                
+                task_loss_step = (
+                    torch.var(field)
+                    + torch.abs(torch.mean(field) - 0.5)
+                    + chaos_regularizer(field)
+                )
+                task_loss += task_loss_step
+                state = self.get_state_key(field)
+            
             received_state = self.receive_state()
             if received_state is not None:
                 action = self.choose_action(state)
@@ -787,15 +939,43 @@ class OscillatorySynapseTheory:
                     field = self.nn2.adjust_syntropy(received_state)
                 else:
                     field = self.nn3.penalize_variance(received_state)
-                loss = torch.var(field) + torch.abs(torch.mean(field) - 0.5)
-                total_loss += loss
-                reward = 1.0 / (1.0 + loss.item())
-                total_reward += reward
-                self.update_q_table(reward, state, action)
-            denom = (len(synthetic_data) + (1 if streamed_text else 0) + (1 if received_state is not None else 0))
-            total_loss = total_loss / max(1, denom)
-
-            # Keep lightweight gradient flow for optimizer/lr compatibility.
+                
+                task_loss_step = (
+                    torch.var(field)
+                    + torch.abs(torch.mean(field) - 0.5)
+                    + chaos_regularizer(field)
+                )
+                task_loss += task_loss_step
+                state = self.get_state_key(field)
+            
+            # Evolve field according to free energy gradient flow
+            self.free_energy_model.step(dt=0.01, mobility=1.0)
+            
+            # Compute new free energy and descent penalty
+            new_F = free_energy(self.free_energy_model)
+            descent_penalty = torch.relu(new_F - prev_F)
+            
+            # Compute total loss: task + free energy + descent penalty
+            denom = max(1, len(synthetic_data) + (1 if streamed_text else 0) + (1 if received_state is not None else 0))
+            task_loss = task_loss / denom
+            
+            total_loss = task_loss + 0.1 * new_F + 1.0 * descent_penalty
+            
+            # Compute reward from energy descent
+            energy_descent = prev_F.item() - new_F.item()
+            epoch_reward = 1.0 / (1.0 + new_F.item()) + 0.5 * max(0, energy_descent)
+            total_reward += epoch_reward
+            
+            # Q-table update: reward based on achieving lower energy
+            state_key = self.get_state_key(self.field)
+            if state_key not in self.q_table:
+                self.q_table[state_key] = {action: 0.0 for action in self.actions}
+            for action in self.actions:
+                if action not in self.q_table[state_key]:
+                    self.q_table[state_key][action] = 0.0
+                self.q_table[state_key][action] += self.alpha * (epoch_reward - self.q_table[state_key][action])
+            
+            # Lightweight regularization
             reg = 1e-4 * (
                 self.nn1.gain.pow(2) + self.nn2.gain.pow(2) + self.nn3.gain.pow(2)
             )
@@ -804,8 +984,12 @@ class OscillatorySynapseTheory:
             self.optimizer2.step()
             self.optimizer3.step()
             self.optimizer_interaction.step()
-            logger.info(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss.item():.4f}, Avg Reward: {total_reward/(epoch+1):.4f}")
-        return total_reward / epochs
+            
+            # Store energy for next epoch
+            self.prev_free_energy = new_F.detach()
+            
+            logger.info(f"Epoch {epoch+1}/{epochs}, Task Loss: {task_loss.item():.4f}, Free Energy: {new_F.item():.4f}, Energy Descent: {energy_descent:.4f}, Reward: {epoch_reward:.4f}")
+        return total_reward / max(1, epochs)
 
     def share_state(self):
         self.message_queue.append(self.field.clone())

@@ -158,23 +158,25 @@ class SymbolicSpeedOptimizer:
         self.prediction_cache = {}
         self.cache_hits = 0
         self.total_queries = 0
-        
-    async def predict_and_cache(self, concepts: List[str], neural_output: torch.Tensor) -> str:
+
+    async def predict_and_cache(self, concepts: List[str], neural_output: torch.Tensor, force: bool = False) -> str:
         """Cache symbolic predictions for recurring patterns"""
         self.total_queries += 1
-        cache_key = tuple(sorted(concepts[:3]))  # Use top 3 concepts as key
-        
+        cache_key = tuple(sorted(concepts[:3]))
+
         if cache_key in self.prediction_cache:
             self.cache_hits += 1
             return self.prediction_cache[cache_key]
-        
+
+        if not force and torch.var(neural_output).item() < 0.01:
+            return "symbolic-skipped-stable-state"
+
         result = await self.interpreter.predict(concepts, neural_output)
         self.prediction_cache[cache_key] = result
-        
-        # Limit cache size
+
         if len(self.prediction_cache) > 100:
             self.prediction_cache.pop(next(iter(self.prediction_cache)))
-        
+
         return result
     
     def get_cache_efficiency(self) -> float:

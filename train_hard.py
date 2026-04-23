@@ -6,8 +6,8 @@ Dataset  : WikiText-103 (100x larger than WikiText-2, long-form Wikipedia articl
 Field    : 256 neurons  (vs 150 baseline)
 Batches  : 150          (vs 50 baseline)
 Batch sz : 15 texts     (vs 10 baseline)
-Concepts : 30 per batch (vs 20 baseline)
-SNN epochs: 6 per batch (vs 3 baseline)
+Concepts : adaptive 10-20 per batch by stability
+SNN epochs: adaptive 1-3 per batch by stability
 Noise    : 0.25         (vs 0.15 baseline)
 HRM      : field_shape (24, 24)  (vs default 12x12)
 
@@ -34,8 +34,6 @@ FIELD_SIZE   = 256
 NUM_BATCHES  = 150
 BATCH_SIZE   = 15
 NOISE_LEVEL  = 0.25
-SNN_EPOCHS   = 6
-MAX_CONCEPTS = 30
 DATASET      = "wikitext"
 DATASET_CFG  = "wikitext-103-raw-v1"
 WEIGHTS_OUT  = "atlantean_hrm_hard.pth"
@@ -48,8 +46,7 @@ METRICS_OUT  = "training_metrics_hard.json"
 # duplicating the whole training loop.
 # ──────────────────────────────────────────────
 def _patch_trainer(trainer):
-    """Wire harder hyper-parameters into an existing trainer instance."""
-    import numpy as np
+    """Wire adaptive hard-mode hyper-parameters into an existing trainer instance."""
     import torch
 
     # Larger symbolic config
@@ -71,60 +68,68 @@ def _patch_trainer(trainer):
     # Deeper K-clustering ceiling
     trainer.k_optimizer.max_k = 30
 
-    # Store patched constants so train_on_text_batch picks them up
-    trainer._hard_max_concepts = MAX_CONCEPTS
-    trainer._hard_snn_epochs   = SNN_EPOCHS
-
-    # Monkey-patch train_on_text_batch to use harder constants
-    original_batch = trainer.train_on_text_batch.__func__
-
     async def hard_batch(self, texts, batch_id):
-        """Harder version: more concepts, more SNN epochs per batch."""
         from utils.noise_injection import NoiseType
         import torch
 
         batch_start = time.time()
         batch_concepts = []
+
         for text in texts:
-            await self.neuroplasticity_mgr.learn_async(text)
-            words = text.split()[:20]          # 20 words instead of 10
+            await self.neuroplasticity_mgr.learn_async(text, train_every=8)
+            words = text.split()[:12]
             batch_concepts.extend(words)
 
-        resonance    = self.core_field.get_resonance_metric()
-        field_state  = self.core_field.get_state()
+        resonance = self.core_field.get_resonance_metric()
+        field_state = self.core_field.get_state()
 
         if self.noise_injector is not None:
-            field_state = self.noise_injector.inject(field_state, NoiseType.GAUSSIAN,      self.noise_intensity)
-            field_state = self.noise_injector.inject(field_state, NoiseType.FIELD_PERTURBATION, self.noise_intensity * 0.6)
-            field_state = self.noise_injector.inject(field_state, NoiseType.SALT_AND_PEPPER,    self.noise_intensity * 0.2)
+            field_state = self.noise_injector.inject(field_state, NoiseType.GAUSSIAN, self.noise_intensity * 0.6)
+            field_state = self.noise_injector.inject(field_state, NoiseType.FIELD_PERTURBATION, self.noise_intensity * 0.3)
 
-        field_stability = 1.0 / (1.0 + torch.var(field_state).item())
+        field_var = torch.var(field_state).item()
+        field_stability = 1.0 / (1.0 + field_var)
+
+        # Adaptive budget
+        if field_stability > 0.92:
+            synthetic_samples = 6
+            snn_epochs = 1
+            concept_cap = 10
+            run_symbolic = (batch_id % 8 == 0)
+        elif field_stability > 0.80:
+            synthetic_samples = 10
+            snn_epochs = 2
+            concept_cap = 15
+            run_symbolic = (batch_id % 4 == 0)
+        else:
+            synthetic_samples = 16
+            snn_epochs = 3
+            concept_cap = 20
+            run_symbolic = True
 
         pattern_complexity = self.k_optimizer.get_pattern_complexity(field_state.cpu().numpy())
         new_k = self.k_optimizer.update_k(resonance, pattern_complexity)
+
         from atlantean_hrm_spi import PatternModule
-        if new_k != self.pattern_module.kmeans.n_clusters:
+        if new_k != self.pattern_module.kmeans.n_clusters and batch_id % 5 == 0:
             self.pattern_module = PatternModule(n_clusters=new_k)
 
-        unique_concepts = list(set(batch_concepts))[:MAX_CONCEPTS]   # 30 unique
-        await self.symbolic_optimizer.predict_and_cache(unique_concepts, field_state)
+        unique_concepts = list(set(batch_concepts))[:concept_cap]
 
-        synthetic_data = self.oscillator.generate_synthetic_data(num_samples=30)  # 30 samples
-        if self.noise_injector is not None:
-            synthetic_data = [
-                self.noise_injector.inject(d, NoiseType.DROPOUT, self.noise_intensity * 0.4)
-                for d in synthetic_data
-            ]
+        if run_symbolic:
+            await self.symbolic_optimizer.predict_and_cache(unique_concepts, field_state)
 
-        reward = self.oscillator.train(synthetic_data, texts[0] if texts else None,
-                                       epochs=SNN_EPOCHS)    # 6 epochs
+        synthetic_data = self.oscillator.generate_synthetic_data(num_samples=synthetic_samples)
+        reward = self.oscillator.train(
+            synthetic_data,
+            texts[0] if texts else None,
+            epochs=snn_epochs,
+        )
 
         new_lr = self.plasticity_accelerator.accelerate(reward, field_stability)
         speedup = self.plasticity_accelerator.get_speedup_factor()
 
-        for opt in [self.oscillator.optimizer1,
-                    self.oscillator.optimizer2,
-                    self.oscillator.optimizer3]:
+        for opt in [self.oscillator.optimizer1, self.oscillator.optimizer2, self.oscillator.optimizer3]:
             for pg in opt.param_groups:
                 pg['lr'] = new_lr
 
@@ -166,8 +171,8 @@ async def main():
     print(f"  • Field size: {FIELD_SIZE} neurons  (vs 150 baseline)")
     print(f"  • Batches   : {NUM_BATCHES}           (vs 50 baseline)")
     print(f"  • Batch sz  : {BATCH_SIZE} texts     (vs 10 baseline)")
-    print(f"  • SNN epochs: {SNN_EPOCHS} per batch  (vs 3 baseline)")
-    print(f"  • Concepts  : {MAX_CONCEPTS} per pass    (vs 20 baseline)")
+    print("  • SNN epochs: adaptive (1-3) by field stability")
+    print("  • Concepts  : adaptive cap (10-20) by field stability")
     print(f"  • Noise     : {NOISE_LEVEL}          (vs 0.15 baseline)")
     print(f"\n⏱️  Estimated time: 10-15 minutes")
     print(f"🎯 Goal: Push coherence, fractal complexity, and Guna balance\n")
@@ -193,7 +198,7 @@ async def main():
             dataset_config=DATASET_CFG,
             num_batches=NUM_BATCHES,
             batch_size=BATCH_SIZE,
-            use_streaming=False,
+            use_streaming=True,
         )
 
         # ── Results ──────────────────────────────────────────────────
