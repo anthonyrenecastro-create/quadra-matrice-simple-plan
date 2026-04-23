@@ -27,9 +27,28 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from pathlib import Path
 import os
+import pickle
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+class InteractionCoupler(nn.Module):
+    def __init__(self, hidden_dim: int, input_dim: int):
+        super().__init__()
+        self.alpha = nn.Parameter(torch.tensor(0.55))
+        self.beta = nn.Parameter(torch.tensor(0.35))
+        self.gamma = nn.Parameter(torch.tensor(0.10))
+
+        self.internal_proj = nn.Linear(4, hidden_dim)
+        self.external_proj = nn.Linear(input_dim, hidden_dim)
+        self.out_proj = nn.Linear(hidden_dim, hidden_dim)
+
+    def forward(self, internal_stats: torch.Tensor, obs: torch.Tensor) -> torch.Tensor:
+        f_int = torch.tanh(self.internal_proj(internal_stats))
+        f_ext = torch.tanh(self.external_proj(obs))
+        interaction = self.alpha * f_int + self.beta * f_ext + self.gamma * (f_int * f_ext)
+        return torch.tanh(self.out_proj(interaction))
 
 
 def _load_hrm_simulation_engine_class():
@@ -72,6 +91,50 @@ class AtlanteanHRMGPUElement(nn.Module):
         self.gamma5 = 0.04
         self.base_threshold = 1.0
         self.base_leak = 0.12
+        self.step_idx = 0
+        self.interaction_coupler = InteractionCoupler(
+            hidden_dim=self.grid_size,
+            input_dim=self.grid_size,
+        ).to(self.device)
+        self.cached_stability = torch.tensor(0.0, device=self.device)
+        self.cached_variance = torch.tensor(1.0, device=self.device)
+        self.cached_phi1_mean = torch.mean(self.phi1)
+        self.cached_phi5_mean = torch.mean(self.phi5)
+        self.last_interaction_signal = torch.zeros(self.grid_size, device=self.device)
+        self.last_run_full_fields = True
+
+    def _prepare_signal(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.flatten()
+        if x.numel() < self.grid_size:
+            x = F.pad(x, (0, self.grid_size - x.numel()))
+        else:
+            x = x[: self.grid_size]
+        return x
+
+    def _derive_stability(self, variance: torch.Tensor, stability_hint: Optional[float]) -> torch.Tensor:
+        derived = 1.0 / (1.0 + variance)
+        if stability_hint is None:
+            return derived
+        hint = torch.tensor(float(stability_hint), device=self.device)
+        return torch.clamp(0.5 * derived + 0.5 * hint, 0.0, 1.0)
+
+    def _refresh_cached_stats(self, stability_hint: Optional[float]) -> None:
+        field_variance = 0.5 * (torch.var(self.phi1) + torch.var(self.phi5))
+        self.cached_variance = field_variance.detach()
+        self.cached_stability = self._derive_stability(field_variance, stability_hint).detach()
+        self.cached_phi1_mean = torch.mean(self.phi1).detach()
+        self.cached_phi5_mean = torch.mean(self.phi5).detach()
+
+    def _interaction_signal(self, obs: torch.Tensor) -> torch.Tensor:
+        internal_stats = torch.stack(
+            [
+                self.cached_phi1_mean,
+                self.cached_phi5_mean,
+                self.cached_stability,
+                self.cached_variance,
+            ]
+        ).unsqueeze(0)
+        return self.interaction_coupler(internal_stats, obs.unsqueeze(0)).squeeze(0)
 
     def _to_grid(self, x: torch.Tensor) -> torch.Tensor:
         x = x.flatten()
@@ -107,25 +170,186 @@ class AtlanteanHRMGPUElement(nn.Module):
         advection = self.theta * (lap_phi5 * self.Phi + self.phi5 * lap_Phi)
         self.phi5 = torch.clamp(self.phi5 + dt * (-self.gamma5 * lap_phi5 + log_term + advection), -1.0, 5.0)
 
-    def step(self, input_signal: torch.Tensor, hrm_force: float = 0.0, dt: float = 0.01) -> torch.Tensor:
-        x = input_signal.flatten()
-        if x.numel() < self.grid_size:
-            x = F.pad(x, (0, self.grid_size - x.numel()))
-        else:
-            x = x[: self.grid_size]
+    def step(
+        self,
+        input_signal: torch.Tensor,
+        hrm_force: float = 0.0,
+        dt: float = 0.01,
+        stability_hint: Optional[float] = None,
+    ) -> torch.Tensor:
+        x = self._prepare_signal(input_signal)
+        interaction_signal = self._interaction_signal(x)
+        run_full_fields = (
+            self.cached_stability.mean().item() < 0.82
+            or interaction_signal.abs().mean().item() > 0.10
+            or (self.step_idx % 4 == 0)
+        )
 
-        self.pde_step(hrm_force=hrm_force, dt=dt)
-        threshold = self.base_threshold - 0.5 * self.phi1
-        leak = self.base_leak * (1.0 / (1.0 + torch.relu(self.phi5)))
+        if run_full_fields:
+            self.pde_step(hrm_force=hrm_force, dt=dt)
+            self._refresh_cached_stats(stability_hint)
 
-        self.membrane = self.membrane * (1.0 - leak) + x
+        threshold = (
+            self.base_threshold
+            - 0.5 * self.phi1
+            - 0.12 * interaction_signal
+            + 0.08 * self.cached_variance
+            - 0.08 * self.cached_stability
+        )
+        leak = torch.clamp(
+            self.base_leak * (1.0 / (1.0 + torch.relu(self.phi5)))
+            + 0.06 * torch.sigmoid(interaction_signal)
+            + 0.03 * self.cached_stability,
+            0.70,
+            0.99,
+        )
+
+        self.membrane = self.membrane * (1.0 - leak) + x + 0.15 * interaction_signal
         spikes = (self.membrane > threshold).float()
         self.membrane = self.membrane * (1.0 - spikes)
         self.Phi = 0.9 * self.Phi + 0.1 * spikes
-        return spikes[: self.field_size]
+        self.last_interaction_signal = interaction_signal.detach()
+        self.last_run_full_fields = run_full_fields
+        self.step_idx += 1
+        return torch.clamp(spikes + 0.10 * interaction_signal, 0.0, 1.0)[: self.field_size]
 
     def current_field(self) -> torch.Tensor:
         return self.phi1[: self.field_size].clone()
+
+    def benchmark_gated_path(
+        self,
+        num_steps: int = 400,
+        warmup_steps: int = 40,
+        dt: float = 0.01,
+        stability_hint: Optional[float] = 0.95,
+    ) -> Dict[str, float]:
+        """Micro-benchmark gated updates vs forced full PDE updates."""
+        if num_steps <= 0:
+            raise ValueError("num_steps must be > 0")
+        if warmup_steps < 0:
+            raise ValueError("warmup_steps must be >= 0")
+
+        def _sync_if_cuda() -> None:
+            if self.device.type == 'cuda':
+                torch.cuda.synchronize(self.device)
+
+        def _snapshot_state() -> Dict[str, Any]:
+            return {
+                'phi1': self.phi1.clone(),
+                'phi5': self.phi5.clone(),
+                'Phi': self.Phi.clone(),
+                'membrane': self.membrane.clone(),
+                'cached_stability': self.cached_stability.clone(),
+                'cached_variance': self.cached_variance.clone(),
+                'cached_phi1_mean': self.cached_phi1_mean.clone(),
+                'cached_phi5_mean': self.cached_phi5_mean.clone(),
+                'last_interaction_signal': self.last_interaction_signal.clone(),
+                'last_run_full_fields': bool(self.last_run_full_fields),
+                'step_idx': int(self.step_idx),
+            }
+
+        def _restore_state(state: Dict[str, Any]) -> None:
+            self.phi1 = state['phi1'].clone()
+            self.phi5 = state['phi5'].clone()
+            self.Phi = state['Phi'].clone()
+            self.membrane = state['membrane'].clone()
+            self.cached_stability = state['cached_stability'].clone()
+            self.cached_variance = state['cached_variance'].clone()
+            self.cached_phi1_mean = state['cached_phi1_mean'].clone()
+            self.cached_phi5_mean = state['cached_phi5_mean'].clone()
+            self.last_interaction_signal = state['last_interaction_signal'].clone()
+            self.last_run_full_fields = bool(state['last_run_full_fields'])
+            self.step_idx = int(state['step_idx'])
+
+        def _run_timed_pass(
+            force_full: bool = False,
+            neutralize_interaction: bool = False,
+        ) -> Dict[str, float]:
+            skipped = 0
+            full = 0
+
+            coupler_backup = None
+            if neutralize_interaction:
+                coupler_backup = [p.detach().clone() for p in self.interaction_coupler.parameters()]
+                with torch.no_grad():
+                    for p in self.interaction_coupler.parameters():
+                        p.zero_()
+
+            try:
+                for _ in range(warmup_steps):
+                    if force_full:
+                        self.cached_stability.fill_(0.0)
+                    _ = self.step(signal, hrm_force=0.0, dt=dt, stability_hint=stability_hint)
+
+                _sync_if_cuda()
+                t_start = time.perf_counter()
+                for _ in range(num_steps):
+                    if force_full:
+                        self.cached_stability.fill_(0.0)
+                    _ = self.step(signal, hrm_force=0.0, dt=dt, stability_hint=stability_hint)
+                    if self.last_run_full_fields:
+                        full += 1
+                    else:
+                        skipped += 1
+                _sync_if_cuda()
+                elapsed = time.perf_counter() - t_start
+            finally:
+                if coupler_backup is not None:
+                    with torch.no_grad():
+                        for p, old in zip(self.interaction_coupler.parameters(), coupler_backup):
+                            p.copy_(old)
+
+            return {
+                'elapsed_s': float(elapsed),
+                'skipped_steps': float(skipped),
+                'full_steps': float(full),
+                'skipped_step_frequency': float(skipped / num_steps),
+            }
+
+        import time
+
+        base_state = _snapshot_state()
+        signal = torch.zeros(self.field_size, device=self.device)
+
+        _restore_state(base_state)
+        gated = _run_timed_pass(force_full=False, neutralize_interaction=False)
+
+        _restore_state(base_state)
+        forced = _run_timed_pass(force_full=True, neutralize_interaction=False)
+
+        _restore_state(base_state)
+        low_interaction = _run_timed_pass(force_full=False, neutralize_interaction=True)
+
+        _restore_state(base_state)
+
+        gated_elapsed = gated['elapsed_s']
+        forced_elapsed = forced['elapsed_s']
+        low_elapsed = low_interaction['elapsed_s']
+
+        savings_s = forced_elapsed - gated_elapsed
+        savings_pct = (100.0 * savings_s / forced_elapsed) if forced_elapsed > 0 else 0.0
+        best_case_savings_s = forced_elapsed - low_elapsed
+        best_case_savings_pct = (100.0 * best_case_savings_s / forced_elapsed) if forced_elapsed > 0 else 0.0
+        return {
+            'num_steps': float(num_steps),
+            'warmup_steps': float(warmup_steps),
+            'skipped_steps': gated['skipped_steps'],
+            'full_steps': gated['full_steps'],
+            'skipped_step_frequency': gated['skipped_step_frequency'],
+            'gated_total_ms': float(gated_elapsed * 1000.0),
+            'forced_full_total_ms': float(forced_elapsed * 1000.0),
+            'gated_step_ms': float((gated_elapsed / num_steps) * 1000.0),
+            'forced_full_step_ms': float((forced_elapsed / num_steps) * 1000.0),
+            'wall_clock_savings_ms': float(savings_s * 1000.0),
+            'wall_clock_savings_pct': float(savings_pct),
+            'low_interaction_skipped_steps': low_interaction['skipped_steps'],
+            'low_interaction_full_steps': low_interaction['full_steps'],
+            'low_interaction_skipped_step_frequency': low_interaction['skipped_step_frequency'],
+            'low_interaction_total_ms': float(low_elapsed * 1000.0),
+            'low_interaction_step_ms': float((low_elapsed / num_steps) * 1000.0),
+            'best_case_wall_clock_savings_ms': float(best_case_savings_s * 1000.0),
+            'best_case_wall_clock_savings_pct': float(best_case_savings_pct),
+        }
 
 
 @dataclass
@@ -203,15 +427,18 @@ class GPUOptimizedField(nn.Module):
         logger.info(f"🧠 GPU-Optimized Field initialized on {self.device}")
         logger.info(f"   Parameters: {sum(p.numel() for p in self.parameters()):,}")
     
-    @torch.cuda.amp.autocast(enabled=True)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass with automatic mixed precision"""
         # Ensure input is on correct device
         if x.device != self.device:
             x = x.to(self.device, non_blocking=True)
-        
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
+
+        with torch.amp.autocast(
+            device_type="cuda",
+            enabled=self.config.mixed_precision and self.device.type == 'cuda',
+        ):
+            encoded = self.encoder(x)
+            decoded = self.decoder(encoded)
         return decoded
     
     def update_field(self, input_data: torch.Tensor, learning_rate: float = 0.01) -> torch.Tensor:
@@ -275,7 +502,6 @@ class GPUSpikingNetwork(nn.Module):
         membrane = membrane * (1 - spikes) * self.decay
         return spikes, membrane
     
-    @torch.cuda.amp.autocast(enabled=True)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Process spikes across time steps on GPU"""
         if x.device != self.device:
@@ -295,24 +521,28 @@ class GPUSpikingNetwork(nn.Module):
         
         spike_history = []
         
-        # Vectorized spike processing on GPU
-        for _ in range(self.num_steps):
-            # Layer 1
-            mem1 = mem1 + self.fc1(x)
-            spk1, mem1 = self.spike_activation(mem1)
-            
-            # Layer 2
-            mem2 = mem2 + self.fc2(spk1)
-            spk2, mem2 = self.spike_activation(mem2)
-            
-            # Layer 3
-            mem3 = mem3 + self.fc3(spk2)
-            spk3, mem3 = self.spike_activation(mem3)
-            
-            spike_history.append(spk3)
-        
-        # Aggregate spikes efficiently on GPU
-        output = torch.stack(spike_history).mean(dim=0)
+        with torch.amp.autocast(
+            device_type="cuda",
+            enabled=self.config.mixed_precision and self.device.type == 'cuda',
+        ):
+            # Vectorized spike processing on GPU
+            for _ in range(self.num_steps):
+                # Layer 1
+                mem1 = mem1 + self.fc1(x)
+                spk1, mem1 = self.spike_activation(mem1)
+
+                # Layer 2
+                mem2 = mem2 + self.fc2(spk1)
+                spk2, mem2 = self.spike_activation(mem2)
+
+                # Layer 3
+                mem3 = mem3 + self.fc3(spk2)
+                spk3, mem3 = self.spike_activation(mem3)
+
+                spike_history.append(spk3)
+
+            # Aggregate spikes efficiently on GPU
+            output = torch.stack(spike_history).mean(dim=0)
         
         return output.squeeze() if batch_size == 1 else output
 
@@ -351,6 +581,11 @@ class GPUOscillatorEngine:
             lr=0.001,
             foreach=True
         )
+        self.optimizer_interaction = optim.AdamW(
+            self.atlantean.interaction_coupler.parameters(),
+            lr=0.001,
+            foreach=True
+        )
         
         # Mixed precision scalers
         self.scaler_field = GradScaler() if self.config.mixed_precision else None
@@ -370,7 +605,8 @@ class GPUOscillatorEngine:
         outputs = []
         for row in batch:
             hrm_force = self._step_hrm(row)
-            routed = self.atlantean.step(row, hrm_force=hrm_force, dt=0.01)
+            stability_hint = float(self.last_hrm_metrics.get('f_stability', 0.0)) if self.last_hrm_metrics else None
+            routed = self.atlantean.step(row, hrm_force=hrm_force, dt=0.01, stability_hint=stability_hint)
             outputs.append(routed)
         return torch.stack(outputs, dim=0)
     
@@ -382,7 +618,10 @@ class GPUOscillatorEngine:
             batch = batch.to(device, non_blocking=True)
         
         # Route everything through the Atlantean-HRM core.
-        with torch.cuda.amp.autocast(enabled=self.config.mixed_precision):
+        with torch.amp.autocast(
+            device_type="cuda",
+            enabled=self.config.mixed_precision and device.type == 'cuda',
+        ):
             spike_output = self._route_batch_through_atlantean_hrm(batch)
             field_output = spike_output
 
@@ -408,7 +647,10 @@ class GPUOscillatorEngine:
             batch = batch.to(device, non_blocking=True)
         
         # Forward pass with automatic mixed precision
-        with torch.cuda.amp.autocast(enabled=self.config.mixed_precision):
+        with torch.amp.autocast(
+            device_type="cuda",
+            enabled=self.config.mixed_precision and device.type == 'cuda',
+        ):
             spike_output = self._route_batch_through_atlantean_hrm(batch)
             field_output = spike_output
 
@@ -424,16 +666,19 @@ class GPUOscillatorEngine:
         # Backward pass with gradient scaling
         self.optimizer_field.zero_grad(set_to_none=True)  # More efficient on GPU
         self.optimizer_spike.zero_grad(set_to_none=True)
+        self.optimizer_interaction.zero_grad(set_to_none=True)
         
         if self.scaler_field:
             self.scaler_field.scale(total_loss).backward()
             self.scaler_field.step(self.optimizer_field)
             self.scaler_field.step(self.optimizer_spike)
+            self.scaler_field.step(self.optimizer_interaction)
             self.scaler_field.update()
         else:
             total_loss.backward()
             self.optimizer_field.step()
             self.optimizer_spike.step()
+            self.optimizer_interaction.step()
         
         return total_loss.item()
     
@@ -468,35 +713,99 @@ class GPUOscillatorEngine:
             'throughput_samples_per_sec': (num_iterations * self.config.batch_size) / elapsed,
             'device': str(device),
         }
+
+    def benchmark_gated_path(
+        self,
+        num_steps: int = 400,
+        warmup_steps: int = 40,
+        dt: float = 0.01,
+        stability_hint: Optional[float] = 0.95,
+    ) -> Dict[str, float]:
+        """Engine-level wrapper for gated-path micro-benchmark."""
+        metrics = self.atlantean.benchmark_gated_path(
+            num_steps=num_steps,
+            warmup_steps=warmup_steps,
+            dt=dt,
+            stability_hint=stability_hint,
+        )
+        metrics['device'] = str(self.device)
+        return metrics
     
     def save_checkpoint(self, path: str):
         """Save model checkpoint"""
+        config_payload = {
+            'use_cuda': self.config.use_cuda,
+            'mixed_precision': self.config.mixed_precision,
+            'num_gpus': self.config.num_gpus,
+            'batch_size': self.config.batch_size,
+            'pin_memory': self.config.pin_memory,
+            'num_workers': self.config.num_workers,
+            'prefetch_factor': self.config.prefetch_factor,
+            'persistent_workers': self.config.persistent_workers,
+        }
         torch.save({
             'field_network': self.field_network.state_dict(),
             'spike_network': self.spike_network.state_dict(),
+            'interaction_coupler': self.atlantean.interaction_coupler.state_dict(),
             'optimizer_field': self.optimizer_field.state_dict(),
             'optimizer_spike': self.optimizer_spike.state_dict(),
+            'optimizer_interaction': self.optimizer_interaction.state_dict(),
             'atlantean_phi1': self.atlantean.phi1,
             'atlantean_phi5': self.atlantean.phi5,
             'atlantean_Phi': self.atlantean.Phi,
+            'atlantean_membrane': self.atlantean.membrane,
+            'atlantean_cached_stability': self.atlantean.cached_stability,
+            'atlantean_cached_variance': self.atlantean.cached_variance,
+            'atlantean_cached_phi1_mean': self.atlantean.cached_phi1_mean,
+            'atlantean_cached_phi5_mean': self.atlantean.cached_phi5_mean,
+            'atlantean_last_interaction_signal': self.atlantean.last_interaction_signal,
+            'atlantean_last_run_full_fields': self.atlantean.last_run_full_fields,
+            'atlantean_step_idx': self.atlantean.step_idx,
             'hrm_state_vector': torch.tensor(self.hrm_state.state_vector, dtype=torch.float32),
-            'config': self.config,
+            'config': config_payload,
         }, path)
         logger.info(f"💾 Checkpoint saved: {path}")
     
     def load_checkpoint(self, path: str):
         """Load model checkpoint"""
-        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        try:
+            checkpoint = torch.load(path, map_location=self.device, weights_only=True)
+        except pickle.UnpicklingError:
+            # Legacy checkpoints may include custom classes (for example GPUConfig).
+            checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        except TypeError:
+            # Backward compatibility for older torch versions without weights_only.
+            checkpoint = torch.load(path, map_location=self.device)
         self.field_network.load_state_dict(checkpoint['field_network'])
         self.spike_network.load_state_dict(checkpoint['spike_network'])
+        if 'interaction_coupler' in checkpoint:
+            self.atlantean.interaction_coupler.load_state_dict(checkpoint['interaction_coupler'])
         self.optimizer_field.load_state_dict(checkpoint['optimizer_field'])
         self.optimizer_spike.load_state_dict(checkpoint['optimizer_spike'])
+        if 'optimizer_interaction' in checkpoint:
+            self.optimizer_interaction.load_state_dict(checkpoint['optimizer_interaction'])
         if 'atlantean_phi1' in checkpoint:
             self.atlantean.phi1 = checkpoint['atlantean_phi1'].to(self.device)
         if 'atlantean_phi5' in checkpoint:
             self.atlantean.phi5 = checkpoint['atlantean_phi5'].to(self.device)
         if 'atlantean_Phi' in checkpoint:
             self.atlantean.Phi = checkpoint['atlantean_Phi'].to(self.device)
+        if 'atlantean_membrane' in checkpoint:
+            self.atlantean.membrane = checkpoint['atlantean_membrane'].to(self.device)
+        if 'atlantean_cached_stability' in checkpoint:
+            self.atlantean.cached_stability = checkpoint['atlantean_cached_stability'].to(self.device)
+        if 'atlantean_cached_variance' in checkpoint:
+            self.atlantean.cached_variance = checkpoint['atlantean_cached_variance'].to(self.device)
+        if 'atlantean_cached_phi1_mean' in checkpoint:
+            self.atlantean.cached_phi1_mean = checkpoint['atlantean_cached_phi1_mean'].to(self.device)
+        if 'atlantean_cached_phi5_mean' in checkpoint:
+            self.atlantean.cached_phi5_mean = checkpoint['atlantean_cached_phi5_mean'].to(self.device)
+        if 'atlantean_last_interaction_signal' in checkpoint:
+            self.atlantean.last_interaction_signal = checkpoint['atlantean_last_interaction_signal'].to(self.device)
+        if 'atlantean_last_run_full_fields' in checkpoint:
+            self.atlantean.last_run_full_fields = bool(checkpoint['atlantean_last_run_full_fields'])
+        if 'atlantean_step_idx' in checkpoint:
+            self.atlantean.step_idx = int(checkpoint['atlantean_step_idx'])
         if 'hrm_state_vector' in checkpoint:
             vec = checkpoint['hrm_state_vector'].detach().cpu().numpy()
             n = min(len(vec), self.hrm_state.state_vector.size)
