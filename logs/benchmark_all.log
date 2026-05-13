@@ -1,0 +1,149 @@
+/workspaces/cognitive_sim/benchmark_all_features.py:85: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  'timestamp': datetime.utcnow().isoformat(),
+2026-05-13 01:46:31,493 - __main__ - INFO - 
+🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+2026-05-13 01:46:31,493 - __main__ - INFO - STARTING COMPREHENSIVE FEATURE BENCHMARKS
+2026-05-13 01:46:31,493 - __main__ - INFO - 🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀
+2026-05-13 01:46:31,493 - __main__ - INFO - 
+================================================================================
+2026-05-13 01:46:31,493 - __main__ - INFO - 🔬 IFT FIELD SYSTEM BENCHMARKS
+2026-05-13 01:46:31,493 - __main__ - INFO - ================================================================================
+2026-05-13 01:46:32,222 - __main__ - INFO - Initializing interpreter with IFT enabled...
+2026-05-13 01:46:32,222 - quadra.state.memory_store - INFO - Loaded neural state from disk
+2026-05-13 01:46:32,223 - quadra.state.memory_store - INFO - Loaded 72 concepts from memory
+2026-05-13 01:46:32,223 - quadra.state.memory_store - INFO - Loaded neuroplasticity trajectory (235 entries)
+2026-05-13 01:46:32,223 - quadra.state.memory_store - INFO - MemoryStore initialized at memory_store
+2026-05-13 01:46:32,224 - quadra.core.symbolic.interpreter - INFO - Using field shape from saved state: (16, 16)
+2026-05-13 01:46:32,225 - quadra.core.symbolic.interpreter - INFO - Restored IFT field state: (10, 16, 16)
+2026-05-13 01:46:32,225 - quadra.core.governance.policy_adapter - INFO - PolicyEngine initialized with 3 rules
+2026-05-13 01:46:32,225 - quadra.core.governance.policy_adapter - INFO - GovernanceService initialized
+2026-05-13 01:46:32,226 - quadra.core.symbolic.interpreter - INFO - StatefulSymbolicPredictiveInterpreter initialized (vbenchmark-ift-1.0, IFT=True)
+/workspaces/cognitive_sim/benchmark_all_features.py:117: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  timestamp=f"{datetime.utcnow().isoformat()} [{label}]",
+2026-05-13 01:46:33,573 - __main__ - INFO - 
+📡 Field Metrics Sample:
+2026-05-13 01:46:33,573 - __main__ - INFO -    Field Energy: 4317.2774
+2026-05-13 01:46:33,573 - __main__ - INFO -    Symmetry Order: 0.0038
+2026-05-13 01:46:33,573 - __main__ - INFO -    Global Potential: 0.0004
+2026-05-13 01:46:33,573 - __main__ - INFO - 
+Benchmarking baseline (IFT disabled)...
+2026-05-13 01:46:33,574 - quadra.state.memory_store - INFO - Loaded neural state from disk
+2026-05-13 01:46:33,574 - quadra.state.memory_store - INFO - Loaded 72 concepts from memory
+2026-05-13 01:46:33,574 - quadra.state.memory_store - INFO - Loaded neuroplasticity trajectory (270 entries)
+2026-05-13 01:46:33,574 - quadra.state.memory_store - INFO - MemoryStore initialized at memory_store
+2026-05-13 01:46:33,575 - quadra.core.governance.policy_adapter - INFO - PolicyEngine initialized with 3 rules
+2026-05-13 01:46:33,575 - quadra.core.governance.policy_adapter - INFO - GovernanceService initialized
+2026-05-13 01:46:33,575 - quadra.core.symbolic.interpreter - INFO - StatefulSymbolicPredictiveInterpreter initialized (vbenchmark-baseline-1.0, IFT=False)
+2026-05-13 01:46:33,732 - __main__ - INFO - 
+⚡ IFT Overhead: +44.3%
+2026-05-13 01:46:33,732 - __main__ - INFO - 
+================================================================================
+2026-05-13 01:46:33,732 - __main__ - INFO - ⚡ INFERENCE LATENCY BENCHMARKS
+2026-05-13 01:46:33,732 - __main__ - INFO - ================================================================================
+2026-05-13 01:46:33,732 - quadra.state.memory_store - INFO - Loaded neural state from disk
+2026-05-13 01:46:33,733 - quadra.state.memory_store - INFO - Loaded 72 concepts from memory
+2026-05-13 01:46:33,733 - quadra.state.memory_store - INFO - Loaded neuroplasticity trajectory (300 entries)
+2026-05-13 01:46:33,733 - quadra.state.memory_store - INFO - MemoryStore initialized at memory_store
+2026-05-13 01:46:33,733 - quadra.core.symbolic.interpreter - INFO - Using field shape from saved state: (16, 16)
+2026-05-13 01:46:33,733 - quadra.core.symbolic.interpreter - INFO - Restored IFT field state: (10, 16, 16)
+2026-05-13 01:46:33,734 - quadra.core.governance.policy_adapter - INFO - PolicyEngine initialized with 3 rules
+2026-05-13 01:46:33,734 - quadra.core.governance.policy_adapter - INFO - GovernanceService initialized
+2026-05-13 01:46:33,734 - quadra.core.symbolic.interpreter - INFO - StatefulSymbolicPredictiveInterpreter initialized (vlatency-bench-1.0, IFT=True)
+2026-05-13 01:46:34,212 - __main__ - INFO - 
+================================================================================
+2026-05-13 01:46:34,212 - __main__ - INFO - 🧠 SYMBOLIC REASONING BENCHMARKS
+2026-05-13 01:46:34,212 - __main__ - INFO - ================================================================================
+2026-05-13 01:46:34,212 - __main__ - ERROR - ❌ Symbolic reasoning benchmarking failed: cannot import name 'SymbolicPredictiveInterpreter' from 'quadra.core.symbolic.interpreter' (/workspaces/cognitive_sim/quadra/core/symbolic/interpreter.py)
+Traceback (most recent call last):
+  File "/workspaces/cognitive_sim/benchmark_all_features.py", line 400, in benchmark_symbolic_reasoning
+    from quadra.core.symbolic.interpreter import SymbolicPredictiveInterpreter
+ImportError: cannot import name 'SymbolicPredictiveInterpreter' from 'quadra.core.symbolic.interpreter' (/workspaces/cognitive_sim/quadra/core/symbolic/interpreter.py). Did you mean: 'StatefulSymbolicPredictiveInterpreter'?
+2026-05-13 01:46:34,213 - __main__ - INFO - 
+================================================================================
+2026-05-13 01:46:34,213 - __main__ - INFO - 💾 MEMORY USAGE BENCHMARKS
+2026-05-13 01:46:34,213 - __main__ - INFO - ================================================================================
+2026-05-13 01:46:34,213 - quadra.state.memory_store - INFO - Loaded neural state from disk
+2026-05-13 01:46:34,214 - quadra.state.memory_store - INFO - Loaded 72 concepts from memory
+2026-05-13 01:46:34,214 - quadra.state.memory_store - INFO - Loaded neuroplasticity trajectory (360 entries)
+2026-05-13 01:46:34,214 - quadra.state.memory_store - INFO - MemoryStore initialized at memory_store
+2026-05-13 01:46:34,214 - quadra.core.symbolic.interpreter - INFO - Using field shape from saved state: (16, 16)
+2026-05-13 01:46:34,214 - quadra.core.symbolic.interpreter - INFO - Restored IFT field state: (10, 16, 16)
+2026-05-13 01:46:34,215 - quadra.core.governance.policy_adapter - INFO - PolicyEngine initialized with 3 rules
+2026-05-13 01:46:34,215 - quadra.core.governance.policy_adapter - INFO - GovernanceService initialized
+2026-05-13 01:46:34,215 - quadra.core.symbolic.interpreter - INFO - StatefulSymbolicPredictiveInterpreter initialized (vmemory-bench-1.0, IFT=True)
+2026-05-13 01:46:34,328 - __main__ - INFO - 
+📊 Memory Usage Over Time:
+2026-05-13 01:46:34,328 - __main__ - INFO -    2026-05-13T01:46:34.213516 [Baseline_empty]: 590.0MB RAM
+2026-05-13 01:46:34,328 - __main__ - INFO -    2026-05-13T01:46:34.215723 [After_interpreter_init]: 590.0MB RAM
+2026-05-13 01:46:34,328 - __main__ - INFO -    2026-05-13T01:46:34.328126 [After_10_inferences]: 590.0MB RAM
+2026-05-13 01:46:34,328 - __main__ - WARNING - ⚠️  GPU not available, skipping GPU benchmarks
+2026-05-13 01:46:34,328 - __main__ - INFO - 
+================================================================================
+2026-05-13 01:46:34,328 - __main__ - INFO - 🔄 MULTI-CORE TRAINING BENCHMARKS
+2026-05-13 01:46:34,328 - __main__ - INFO - ================================================================================
+2026-05-13 01:46:34,330 - __main__ - INFO - CPU Count: 2
+2026-05-13 01:46:34,330 - atlantean_hrm_gpu - WARNING - ⚠️  CUDA not available. Running on CPU.
+2026-05-13 01:46:34,332 - atlantean_hrm_gpu - INFO - 🧠 GPU-Optimized Field initialized on cpu
+2026-05-13 01:46:34,332 - atlantean_hrm_gpu - INFO -    Parameters: 316,516
+2026-05-13 01:46:34,333 - __main__ - ERROR - ❌ Multi-core benchmarking failed: 'GPUOptimizedField' object has no attribute 'encode'
+Traceback (most recent call last):
+  File "/workspaces/cognitive_sim/benchmark_all_features.py", line 518, in benchmark_multicore_training
+    train_batch()
+  File "/workspaces/cognitive_sim/benchmark_all_features.py", line 513, in train_batch
+    _ = field.encode(batch)
+        ^^^^^^^^^^^^
+  File "/workspaces/cognitive_sim/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1931, in __getattr__
+    raise AttributeError(
+AttributeError: 'GPUOptimizedField' object has no attribute 'encode'. Did you mean: 'encoder'?
+2026-05-13 01:46:34,334 - __main__ - INFO - 
+================================================================================
+2026-05-13 01:46:34,334 - __main__ - INFO - 📋 BENCHMARK SUMMARY
+2026-05-13 01:46:34,334 - __main__ - INFO - ================================================================================
+2026-05-13 01:46:34,334 - __main__ - INFO - 
+🏆 Performance Rankings (by mean latency):
+2026-05-13 01:46:34,334 - __main__ - INFO -    2. Baseline Inference (IFT Disabled): 5.20ms
+2026-05-13 01:46:34,334 - __main__ - INFO -    3. IFT Inference (Full Pipeline): 7.50ms
+2026-05-13 01:46:34,334 - __main__ - INFO -    4. Inference Latency (Long Input): 7.77ms
+2026-05-13 01:46:34,334 - __main__ - INFO -    5. Inference Latency (Medium Input): 8.01ms
+2026-05-13 01:46:34,334 - __main__ - INFO -    6. Inference Latency (Short Input): 8.03ms
+2026-05-13 01:46:34,334 - __main__ - INFO - 
+💾 Memory Usage Summary:
+2026-05-13 01:46:34,334 - __main__ - INFO -    Initial: 484.7MB
+2026-05-13 01:46:34,334 - __main__ - INFO -    Final: 590.0MB
+2026-05-13 01:46:34,334 - __main__ - INFO -    Change: +105.3MB (+21.7%)
+/workspaces/cognitive_sim/benchmark_all_features.py:573: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  output_file = self.output_dir / f"benchmark_results_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+2026-05-13 01:46:34,335 - __main__ - INFO - 
+✅ Benchmark results saved to .benchmarks/benchmark_results_20260513_014634.json
+2026-05-13 01:46:34,335 - __main__ - INFO - 
+✅ All benchmarks completed in 2.8s
+
+📊 IFT Inference (Full Pipeline)
+   Mean:    7.50ms | Median: 7.34ms
+   Min:     5.84ms | Max:    12.71ms
+   P95:     10.88ms | P99:    12.40ms
+   StdDev:  1.74ms
+
+📊 Baseline Inference (IFT Disabled)
+   Mean:    5.20ms | Median: 4.26ms
+   Min:     4.08ms | Max:    8.76ms
+   P95:     7.55ms | P99:    8.50ms
+   StdDev:  1.39ms
+
+📊 Inference Latency (Short Input)
+   Mean:    8.03ms | Median: 6.14ms
+   Min:     5.92ms | Max:    13.31ms
+   P95:     13.29ms | P99:    13.30ms
+   StdDev:  2.51ms
+
+📊 Inference Latency (Medium Input)
+   Mean:    8.01ms | Median: 8.22ms
+   Min:     6.11ms | Max:    11.10ms
+   P95:     11.04ms | P99:    11.09ms
+   StdDev:  1.70ms
+
+📊 Inference Latency (Long Input)
+   Mean:    7.77ms | Median: 7.42ms
+   Min:     6.41ms | Max:    9.59ms
+   P95:     9.37ms | P99:    9.54ms
+   StdDev:  1.30ms

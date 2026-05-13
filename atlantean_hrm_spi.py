@@ -364,6 +364,29 @@ class AtlanteanHRMElement:
         self.cached_phi5_mean = torch.mean(self.phi5)
         self.last_interaction_signal = torch.zeros(self.grid_size, device=self.device)
         self.last_run_full_fields = True
+        # ── Gate / mode config ────────────────────────────────────────────────
+        self.gate_interval: int = 8
+        self._cached_gate: bool = True
+        # Mode: "CALM" | "RECOVERY" | "CHAOTIC"
+        self.gate_mode: str = "CALM"
+        self._CALM_RESONANCE: float = 0.15   # resonance < this + slope<0 → CALM
+        self._CHAOS_RESONANCE: float = 0.80  # resonance > this → CHAOTIC
+        self._INTER_FULL: float = 0.10
+        # Hysteresis: require N consecutive calm gate-steps before closing
+        self._GATE_CLOSE_N: int = 6
+        self._close_streak: int = 0
+        # Short rolling buffer for variance slope
+        self._variance_history: deque = deque(maxlen=16)
+        # Resonance damping applied at end of pde_step
+        self.resonance_decay: float = 0.97
+        self._PHI_MAX_NORM: float = 3.5      # norm-clip threshold for phi1
+        # Resonance penalty for training integration (λ·mean|phi1|)
+        self.resonance_loss: float = 0.0
+        self._RESONANCE_LAMBDA: float = 0.05
+        # Recovery duty: PDE fires if gate_epoch % _recovery_period < _recovery_active
+        # defaults → 50% duty (every other gate epoch)
+        self._recovery_period: int = 2
+        self._recovery_active: int = 1
 
     def _prepare_signal(self, x: torch.Tensor) -> torch.Tensor:
         x = x.flatten()
@@ -433,6 +456,14 @@ class AtlanteanHRMElement:
         advection = self.theta * (lap_phi5 * self.Phi + self.phi5 * lap_Phi)
         self.phi5 = torch.clamp(self.phi5 + dt * (-self.gamma5 * lap_phi5 + log_term + advection), -1.0, 5.0)
 
+        # Norm clipping — prevents PDE blow-up that causes latency spikes
+        phi1_norm = self.phi1.norm()
+        if phi1_norm > self._PHI_MAX_NORM:
+            self.phi1 = self.phi1 * (self._PHI_MAX_NORM / phi1_norm)
+        # Resonance damping — decay field energy to aid recovery
+        self.phi1 = self.phi1 * self.resonance_decay
+        self.phi5 = self.phi5 * self.resonance_decay
+
     def dynamic_threshold(self, interaction_signal: Optional[torch.Tensor] = None) -> torch.Tensor:
         threshold = self.base_threshold - 0.5 * self.phi1
         if interaction_signal is None:
@@ -464,16 +495,65 @@ class AtlanteanHRMElement:
         stability_hint: Optional[float] = None,
     ) -> torch.Tensor:
         x = self._prepare_signal(input_signal)
-        interaction_signal = self._interaction_signal(x)
-        run_full_fields = (
-            self.cached_stability.mean().item() < 0.82
-            or interaction_signal.abs().mean().item() > 0.10
-            or (self.step_idx % 4 == 0)
-        )
+
+        # ── Mode-based gate: evaluated once per gate_interval steps ──────────
+        is_gate_step = (self.step_idx % self.gate_interval == 0)
+        if is_gate_step:
+            resonance: float = self.phi1.abs().mean().item()
+
+            # Variance slope — tells us whether the field is calming down
+            var_now = float(self.cached_variance.item())
+            self._variance_history.append(var_now)
+            variance_slope = 0.0
+            if len(self._variance_history) >= 4:
+                h = list(self._variance_history)
+                half = len(h) // 2
+                variance_slope = sum(h[half:]) / (len(h) - half) - sum(h[:half]) / half
+
+            # Candidate mode based on current resonance + slope
+            if resonance > self._CHAOS_RESONANCE:
+                candidate = "CHAOTIC"
+            elif resonance < self._CALM_RESONANCE and variance_slope < 0.0:
+                candidate = "CALM"
+            else:
+                candidate = "RECOVERY"
+
+            # Hysteresis: only transition to CALM after N consecutive calm gate-steps
+            if candidate == "CALM":
+                self._close_streak += 1
+                if self._close_streak < self._GATE_CLOSE_N:
+                    # not yet sustained — stay in RECOVERY unless already CALM
+                    candidate = self.gate_mode if self.gate_mode == "CALM" else "RECOVERY"
+            else:
+                self._close_streak = 0
+
+            self.gate_mode = candidate
+
+            # Decide compute level based on confirmed mode
+            if self.gate_mode == "CALM":
+                run_full_fields = False
+                interaction_signal = self.last_interaction_signal
+            elif self.gate_mode == "CHAOTIC":
+                run_full_fields = True
+                interaction_signal = self._interaction_signal(x)
+            else:  # RECOVERY: partial — run PDE every other gate evaluation
+                interaction_signal = self._interaction_signal(x)
+                gate_epoch = self.step_idx // self.gate_interval
+                run_full_fields = (gate_epoch % self._recovery_period < self._recovery_active)
+
+            self._cached_gate = run_full_fields
+            self.last_interaction_signal = interaction_signal.detach()
+        else:
+            run_full_fields = self._cached_gate
+            interaction_signal = self.last_interaction_signal
+        # ─────────────────────────────────────────────────────────────────────
 
         if run_full_fields:
             self.pde_step(hrm_force=hrm_force, dt=dt)
             self._refresh_cached_stats(stability_hint)
+
+        # Residual resonance penalty (available to training loops)
+        self.resonance_loss = float(self._RESONANCE_LAMBDA * self.phi1.abs().mean().item())
 
         threshold = self.dynamic_threshold(interaction_signal)
         leak = self.effective_leak(interaction_signal)
@@ -484,7 +564,6 @@ class AtlanteanHRMElement:
 
         # Global interplay potential feedback.
         self.Phi = 0.9 * self.Phi + 0.1 * spikes
-        self.last_interaction_signal = interaction_signal.detach()
         self.last_run_full_fields = run_full_fields
         self.step_idx += 1
         return torch.clamp(spikes + 0.10 * interaction_signal, 0.0, 1.0)[: self.field_size]
@@ -521,6 +600,10 @@ class AtlanteanHRMElement:
                 'last_interaction_signal': self.last_interaction_signal.clone(),
                 'last_run_full_fields': bool(self.last_run_full_fields),
                 'step_idx': int(self.step_idx),
+                'gate_mode': str(self.gate_mode),
+                '_cached_gate': bool(self._cached_gate),
+                '_close_streak': int(self._close_streak),
+                '_variance_history': list(self._variance_history),
             }
 
         def _restore_state(state: Dict[str, Any]) -> None:
@@ -535,6 +618,10 @@ class AtlanteanHRMElement:
             self.last_interaction_signal = state['last_interaction_signal'].clone()
             self.last_run_full_fields = bool(state['last_run_full_fields'])
             self.step_idx = int(state['step_idx'])
+            self.gate_mode = str(state['gate_mode'])
+            self._cached_gate = bool(state['_cached_gate'])
+            self._close_streak = int(state['_close_streak'])
+            self._variance_history = deque(state['_variance_history'], maxlen=16)
 
         def _run_timed_pass(
             force_full: bool = False,

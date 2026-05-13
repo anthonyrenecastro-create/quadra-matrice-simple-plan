@@ -1,0 +1,135 @@
+{
+  "timestamp": "2026-05-13T01:46:18.681612",
+  "system_info": {
+    "cpu_count": 1,
+    "cpu_count_logical": 2,
+    "total_memory_gb": 8.330473472,
+    "python_version": "3.12.3 (main, Mar  3 2026, 12:15:18) [GCC 13.3.0]",
+    "torch_version": "2.5.1+cu124",
+    "cuda_available": false,
+    "cuda_devices": 0,
+    "gpu_names": []
+  },
+  "benchmarks": {
+    "IFT Inference (Full Pipeline)": {
+      "name": "IFT Inference (Full Pipeline)",
+      "mean_ms": 13.225203200014827,
+      "median_ms": 11.100179000095522,
+      "min_ms": 5.592793000005258,
+      "max_ms": 26.666040999998586,
+      "stddev_ms": 6.632017850803213,
+      "p95_ms": 24.17856904999098,
+      "p99_ms": 26.08501266000758,
+      "context": {
+        "iterations": 30,
+        "field_enabled": true,
+        "field_shape": [
+          32,
+          32
+        ]
+      }
+    },
+    "Baseline Inference (IFT Disabled)": {
+      "name": "Baseline Inference (IFT Disabled)",
+      "mean_ms": 6.737494066654411,
+      "median_ms": 5.956779999905848,
+      "min_ms": 3.84866400008832,
+      "max_ms": 20.815414000026067,
+      "stddev_ms": 3.5240067374008897,
+      "p95_ms": 12.738561050002764,
+      "p99_ms": 18.9138057000173,
+      "context": {
+        "iterations": 30,
+        "field_enabled": false
+      }
+    },
+    "IFT_overhead_percent": 96.29261368065251,
+    "Inference Latency (Short Input)": {
+      "name": "Inference Latency (Short Input)",
+      "mean_ms": 10.595924199981255,
+      "median_ms": 8.756551499914167,
+      "min_ms": 5.718830999967395,
+      "max_ms": 23.90932299999804,
+      "stddev_ms": 4.612705965596389,
+      "p95_ms": 18.514690050028552,
+      "p99_ms": 22.830396410004134,
+      "context": {
+        "input_type": "Short",
+        "text_length": 4
+      }
+    },
+    "Inference Latency (Medium Input)": {
+      "name": "Inference Latency (Medium Input)",
+      "mean_ms": 7.554856650006059,
+      "median_ms": 7.574125000019194,
+      "min_ms": 5.921973999875263,
+      "max_ms": 10.255298999936713,
+      "stddev_ms": 1.4073628879822548,
+      "p95_ms": 9.591466550068617,
+      "p99_ms": 10.122532509963094,
+      "context": {
+        "input_type": "Medium",
+        "text_length": 69
+      }
+    },
+    "Inference Latency (Long Input)": {
+      "name": "Inference Latency (Long Input)",
+      "mean_ms": 7.624525999995058,
+      "median_ms": 7.357947500054252,
+      "min_ms": 6.170474000100512,
+      "max_ms": 10.603708999951778,
+      "stddev_ms": 1.394310364312408,
+      "p95_ms": 9.482130450044224,
+      "p99_ms": 10.379393289970265,
+      "context": {
+        "input_type": "Long",
+        "text_length": 140
+      }
+    }
+  },
+  "summary": {},
+  "memory_snapshots": [
+    {
+      "timestamp": "2026-05-13T01:46:19.318340 [IFT_initialized]",
+      "rss_mb": 484.950016,
+      "vms_mb": 3589.55008,
+      "percent": 41.1,
+      "gpu_mb": null
+    },
+    {
+      "timestamp": "2026-05-13T01:46:20.849016 [After_IFT_inference]",
+      "rss_mb": 588.234752,
+      "vms_mb": 3764.129792,
+      "percent": 42.5,
+      "gpu_mb": null
+    },
+    {
+      "timestamp": "2026-05-13T01:46:21.575578 [After_latency_tests]",
+      "rss_mb": 589.152256,
+      "vms_mb": 3764.129792,
+      "percent": 42.3,
+      "gpu_mb": null
+    },
+    {
+      "timestamp": "2026-05-13T01:46:21.577010 [Baseline_empty]",
+      "rss_mb": 589.152256,
+      "vms_mb": 3764.129792,
+      "percent": 42.3,
+      "gpu_mb": null
+    },
+    {
+      "timestamp": "2026-05-13T01:46:21.579051 [After_interpreter_init]",
+      "rss_mb": 589.152256,
+      "vms_mb": 3764.129792,
+      "percent": 42.3,
+      "gpu_mb": null
+    },
+    {
+      "timestamp": "2026-05-13T01:46:21.660703 [After_10_inferences]",
+      "rss_mb": 589.152256,
+      "vms_mb": 3764.129792,
+      "percent": 42.3,
+      "gpu_mb": null
+    }
+  ]
+}

@@ -65,678 +65,15 @@
     "physics",
     "establish",
     "quantum",
-    "mechanics"
+    "mechanics",
+    "field",
+    "inference",
+    "benchmark",
+    "baseline",
+    "latency",
+    "memory"
   ],
   "reasoning_traces": [
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T03:42:21.878252"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T03:42:21.889960"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T04:16:45.368515"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T04:16:45.380216"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T04:25:40.231574"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T04:25:40.250854"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:01:07.502363"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:05.194335"
-    },
-    {
-      "concepts": [
-        "quantum"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:02:05.232298"
-    },
-    {
-      "concepts": [
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:05.257677"
-    },
-    {
-      "concepts": [
-        "coherence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:05.286903"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:05.321523"
-    },
-    {
-      "concepts": [
-        "wave",
-        "function",
-        "collapse"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:05.355793"
-    },
-    {
-      "concepts": [
-        "one"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:02:05.422419"
-    },
-    {
-      "concepts": [
-        "concept0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:05.448650"
-    },
-    {
-      "concepts": [
-        "concept1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:05.474545"
-    },
-    {
-      "concepts": [
-        "concept2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:02:05.507537"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:05.535219"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "entanglement",
-        "coding"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:05.579596"
-    },
-    {
-      "concepts": [
-        "exploit",
-        "harm",
-        "violence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:05.634144"
-    },
-    {
-      "concepts": [
-        "physics",
-        "established"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:05.679904"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:05.722959"
-    },
-    {
-      "concepts": [
-        "topic0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:02:05.760597"
-    },
-    {
-      "concepts": [
-        "topic1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:05.788411"
-    },
-    {
-      "concepts": [
-        "topic2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:05.817369"
-    },
-    {
-      "concepts": [
-        "topic3"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:02:05.845048"
-    },
-    {
-      "concepts": [
-        "topic4"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:05.875996"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:36.105197"
-    },
-    {
-      "concepts": [
-        "quantum"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:02:36.145947"
-    },
-    {
-      "concepts": [
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:36.175059"
-    },
-    {
-      "concepts": [
-        "coherence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:36.209206"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:36.251421"
-    },
-    {
-      "concepts": [
-        "wave",
-        "function",
-        "collapse"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:36.299907"
-    },
-    {
-      "concepts": [
-        "one"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:02:36.353539"
-    },
-    {
-      "concepts": [
-        "concept0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:36.382865"
-    },
-    {
-      "concepts": [
-        "concept1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:36.419566"
-    },
-    {
-      "concepts": [
-        "concept2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:02:36.453270"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:36.491100"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "entanglement",
-        "coding"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:36.548370"
-    },
-    {
-      "concepts": [
-        "exploit",
-        "harm",
-        "violence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:36.618236"
-    },
-    {
-      "concepts": [
-        "physics",
-        "established"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:36.665782"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:36.720011"
-    },
-    {
-      "concepts": [
-        "topic0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:02:36.760884"
-    },
-    {
-      "concepts": [
-        "topic1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:02:36.791783"
-    },
-    {
-      "concepts": [
-        "topic2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:02:36.828573"
-    },
-    {
-      "concepts": [
-        "topic3"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:02:36.862821"
-    },
-    {
-      "concepts": [
-        "topic4"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:02:36.902824"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:09:47.063306"
-    },
-    {
-      "concepts": [
-        "quantum"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:09:47.111213"
-    },
-    {
-      "concepts": [
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:09:47.145367"
-    },
-    {
-      "concepts": [
-        "coherence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:09:47.188582"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:09:47.237241"
-    },
-    {
-      "concepts": [
-        "wave",
-        "function",
-        "collapse"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:09:47.338921"
-    },
-    {
-      "concepts": [
-        "one"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:09:47.391791"
-    },
-    {
-      "concepts": [
-        "concept0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:09:47.426148"
-    },
-    {
-      "concepts": [
-        "concept1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:09:47.459249"
-    },
-    {
-      "concepts": [
-        "concept2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:09:47.504324"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:09:47.545266"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "entanglement",
-        "coding"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:09:47.606324"
-    },
-    {
-      "concepts": [
-        "exploit",
-        "harm",
-        "violence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:09:47.676600"
-    },
-    {
-      "concepts": [
-        "physics",
-        "established"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:09:47.729387"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:09:47.789370"
-    },
-    {
-      "concepts": [
-        "topic0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:09:47.833637"
-    },
-    {
-      "concepts": [
-        "topic1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:09:47.872376"
-    },
-    {
-      "concepts": [
-        "topic2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:09:47.912435"
-    },
-    {
-      "concepts": [
-        "topic3"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:09:47.949658"
-    },
-    {
-      "concepts": [
-        "topic4"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:09:47.996141"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:14:49.290568"
-    },
-    {
-      "concepts": [
-        "quantum"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:14:49.338970"
-    },
-    {
-      "concepts": [
-        "phase"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:14:49.375857"
-    },
-    {
-      "concepts": [
-        "coherence"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:14:49.421563"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "mechanics"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:14:49.471632"
-    },
-    {
-      "concepts": [
-        "wave",
-        "function",
-        "collapse"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:14:49.531737"
-    },
-    {
-      "concepts": [
-        "one"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 1,
-      "timestamp": "2026-01-23T05:14:49.589124"
-    },
-    {
-      "concepts": [
-        "concept0"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 2,
-      "timestamp": "2026-01-23T05:14:49.629692"
-    },
-    {
-      "concepts": [
-        "concept1"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:14:49.668262"
-    },
-    {
-      "concepts": [
-        "concept2"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 4,
-      "timestamp": "2026-01-23T05:14:49.726969"
-    },
-    {
-      "concepts": [
-        "test"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 5,
-      "timestamp": "2026-01-23T05:14:49.774112"
-    },
-    {
-      "concepts": [
-        "quantum",
-        "entanglement",
-        "coding"
-      ],
-      "neural_magnitude": 0.0,
-      "graph_size": 3,
-      "timestamp": "2026-01-23T05:14:49.853060"
-    },
     {
       "concepts": [
         "exploit",
@@ -804,7 +141,1083 @@
       "neural_magnitude": 0.0,
       "graph_size": 5,
       "timestamp": "2026-01-23T05:14:50.317696"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 2,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4482170372248839,
+      "timestamp": "2026-05-13T01:46:20.393897"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 8,
+      "hrm_channel": 1,
+      "hrm_objective": 0.44098405446684746,
+      "timestamp": "2026-05-13T01:46:20.428733"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 14,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4374394760337353,
+      "timestamp": "2026-05-13T01:46:20.467995"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 20,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4267939117245431,
+      "timestamp": "2026-05-13T01:46:20.525219"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 26,
+      "hrm_channel": 2,
+      "hrm_objective": 0.426159838931281,
+      "timestamp": "2026-05-13T01:46:20.592767"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 32,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4257512403097942,
+      "timestamp": "2026-05-13T01:46:20.654800"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 38,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4254830074166903,
+      "timestamp": "2026-05-13T01:46:20.693443"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 44,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4326831680471015,
+      "timestamp": "2026-05-13T01:46:20.750269"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 50,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4390789439028754,
+      "timestamp": "2026-05-13T01:46:20.773792"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 56,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4447169279642236,
+      "timestamp": "2026-05-13T01:46:20.793938"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 62,
+      "hrm_channel": 4,
+      "hrm_objective": 0.45041507942847353,
+      "timestamp": "2026-05-13T01:46:20.816179"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 68,
+      "hrm_channel": 4,
+      "hrm_objective": 0.4546410616468565,
+      "timestamp": "2026-05-13T01:46:20.836961"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 1,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4514320370911192,
+      "timestamp": "2026-05-13T01:46:20.859740"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 4,
+      "hrm_channel": 1,
+      "hrm_objective": 0.45136816100528515,
+      "timestamp": "2026-05-13T01:46:20.891776"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 7,
+      "hrm_channel": 1,
+      "hrm_objective": 0.45169199143344846,
+      "timestamp": "2026-05-13T01:46:20.923099"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 10,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4432771640539123,
+      "timestamp": "2026-05-13T01:46:20.941281"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 13,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4368321040363278,
+      "timestamp": "2026-05-13T01:46:20.957771"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 16,
+      "hrm_channel": 2,
+      "hrm_objective": 0.43691990804116737,
+      "timestamp": "2026-05-13T01:46:20.973873"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 19,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4369931397208011,
+      "timestamp": "2026-05-13T01:46:20.991928"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 22,
+      "hrm_channel": 3,
+      "hrm_objective": 0.44525761087225696,
+      "timestamp": "2026-05-13T01:46:21.008498"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 25,
+      "hrm_channel": 3,
+      "hrm_objective": 0.45272709115195314,
+      "timestamp": "2026-05-13T01:46:21.024028"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 28,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4594425951361048,
+      "timestamp": "2026-05-13T01:46:21.038238"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 2,
+      "hrm_channel": 1,
+      "hrm_objective": 0.44359287573004014,
+      "timestamp": "2026-05-13T01:46:21.070344"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 8,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4271206865749377,
+      "timestamp": "2026-05-13T01:46:21.099864"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 14,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4178025474730287,
+      "timestamp": "2026-05-13T01:46:21.134679"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 20,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4155318540595988,
+      "timestamp": "2026-05-13T01:46:21.191276"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 26,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4141123237085581,
+      "timestamp": "2026-05-13T01:46:21.216569"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 32,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4132202867740077,
+      "timestamp": "2026-05-13T01:46:21.240173"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 38,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4126533833007124,
+      "timestamp": "2026-05-13T01:46:21.261455"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 44,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4112974448111166,
+      "timestamp": "2026-05-13T01:46:21.284680"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 50,
+      "hrm_channel": 3,
+      "hrm_objective": 0.407303974345553,
+      "timestamp": "2026-05-13T01:46:21.311808"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 56,
+      "hrm_channel": 3,
+      "hrm_objective": 0.40408153836981114,
+      "timestamp": "2026-05-13T01:46:21.331961"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 62,
+      "hrm_channel": 4,
+      "hrm_objective": 0.4064811381036679,
+      "timestamp": "2026-05-13T01:46:21.352468"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 68,
+      "hrm_channel": 4,
+      "hrm_objective": 0.40766837196877764,
+      "timestamp": "2026-05-13T01:46:21.375001"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 74,
+      "hrm_channel": 4,
+      "hrm_objective": 0.4082239285745776,
+      "timestamp": "2026-05-13T01:46:21.397170"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 80,
+      "hrm_channel": 5,
+      "hrm_objective": 0.4041349533255775,
+      "timestamp": "2026-05-13T01:46:21.418761"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 86,
+      "hrm_channel": 5,
+      "hrm_objective": 0.4012089487684975,
+      "timestamp": "2026-05-13T01:46:21.443244"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 92,
+      "hrm_channel": 5,
+      "hrm_objective": 0.3994101916683602,
+      "timestamp": "2026-05-13T01:46:21.467885"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 98,
+      "hrm_channel": 5,
+      "hrm_objective": 0.3982071461836517,
+      "timestamp": "2026-05-13T01:46:21.489257"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 104,
+      "hrm_channel": 6,
+      "hrm_objective": 0.39610446038760405,
+      "timestamp": "2026-05-13T01:46:21.510529"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 110,
+      "hrm_channel": 6,
+      "hrm_objective": 0.39421120291713785,
+      "timestamp": "2026-05-13T01:46:21.535132"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 116,
+      "hrm_channel": 6,
+      "hrm_objective": 0.3924944545159293,
+      "timestamp": "2026-05-13T01:46:21.559034"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 1,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4479333415738445,
+      "timestamp": "2026-05-13T01:46:21.587948"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 4,
+      "hrm_channel": 1,
+      "hrm_objective": 0.44061281916636125,
+      "timestamp": "2026-05-13T01:46:21.608625"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 7,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4367418057444877,
+      "timestamp": "2026-05-13T01:46:21.634709"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 10,
+      "hrm_channel": 2,
+      "hrm_objective": 0.42607773988167225,
+      "timestamp": "2026-05-13T01:46:21.657063"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 2,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4482170372248839,
+      "timestamp": "2026-05-13T01:46:33.315624"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 8,
+      "hrm_channel": 1,
+      "hrm_objective": 0.44098405446684746,
+      "timestamp": "2026-05-13T01:46:33.336997"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 14,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4374394760337353,
+      "timestamp": "2026-05-13T01:46:33.359112"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 20,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4267939117245431,
+      "timestamp": "2026-05-13T01:46:33.380789"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 26,
+      "hrm_channel": 2,
+      "hrm_objective": 0.426159838931281,
+      "timestamp": "2026-05-13T01:46:33.402813"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 32,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4257512403097942,
+      "timestamp": "2026-05-13T01:46:33.424840"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 38,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4254830074166903,
+      "timestamp": "2026-05-13T01:46:33.445065"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 44,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4326831680471015,
+      "timestamp": "2026-05-13T01:46:33.465151"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 50,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4390789439028754,
+      "timestamp": "2026-05-13T01:46:33.487605"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 56,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4447169279642236,
+      "timestamp": "2026-05-13T01:46:33.509720"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 62,
+      "hrm_channel": 4,
+      "hrm_objective": 0.45041507942847353,
+      "timestamp": "2026-05-13T01:46:33.540471"
+    },
+    {
+      "concepts": [
+        "field",
+        "inference",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 68,
+      "hrm_channel": 4,
+      "hrm_objective": 0.4546410616468565,
+      "timestamp": "2026-05-13T01:46:33.561848"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 1,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4514320370911192,
+      "timestamp": "2026-05-13T01:46:33.579488"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 4,
+      "hrm_channel": 1,
+      "hrm_objective": 0.45136816100528515,
+      "timestamp": "2026-05-13T01:46:33.596129"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 7,
+      "hrm_channel": 1,
+      "hrm_objective": 0.45169199143344846,
+      "timestamp": "2026-05-13T01:46:33.611285"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 10,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4432771640539123,
+      "timestamp": "2026-05-13T01:46:33.626230"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 13,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4368321040363278,
+      "timestamp": "2026-05-13T01:46:33.641027"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 16,
+      "hrm_channel": 2,
+      "hrm_objective": 0.43691990804116737,
+      "timestamp": "2026-05-13T01:46:33.655924"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 19,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4369931397208011,
+      "timestamp": "2026-05-13T01:46:33.671489"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 22,
+      "hrm_channel": 3,
+      "hrm_objective": 0.44525761087225696,
+      "timestamp": "2026-05-13T01:46:33.686596"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 25,
+      "hrm_channel": 3,
+      "hrm_objective": 0.45272709115195314,
+      "timestamp": "2026-05-13T01:46:33.704440"
+    },
+    {
+      "concepts": [
+        "baseline",
+        "inference"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 28,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4594425951361048,
+      "timestamp": "2026-05-13T01:46:33.719857"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 2,
+      "hrm_channel": 1,
+      "hrm_objective": 0.44359287573004014,
+      "timestamp": "2026-05-13T01:46:33.744338"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 8,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4271206865749377,
+      "timestamp": "2026-05-13T01:46:33.764819"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 14,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4178025474730287,
+      "timestamp": "2026-05-13T01:46:33.792953"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 20,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4155318540595988,
+      "timestamp": "2026-05-13T01:46:33.815415"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 26,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4141123237085581,
+      "timestamp": "2026-05-13T01:46:33.836135"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 32,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4132202867740077,
+      "timestamp": "2026-05-13T01:46:33.857730"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 38,
+      "hrm_channel": 2,
+      "hrm_objective": 0.4126533833007124,
+      "timestamp": "2026-05-13T01:46:33.880239"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 44,
+      "hrm_channel": 3,
+      "hrm_objective": 0.4112974448111166,
+      "timestamp": "2026-05-13T01:46:33.913568"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 50,
+      "hrm_channel": 3,
+      "hrm_objective": 0.407303974345553,
+      "timestamp": "2026-05-13T01:46:33.934935"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 56,
+      "hrm_channel": 3,
+      "hrm_objective": 0.40408153836981114,
+      "timestamp": "2026-05-13T01:46:33.956125"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 62,
+      "hrm_channel": 4,
+      "hrm_objective": 0.4064811381036679,
+      "timestamp": "2026-05-13T01:46:33.979828"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 68,
+      "hrm_channel": 4,
+      "hrm_objective": 0.40766837196877764,
+      "timestamp": "2026-05-13T01:46:34.006089"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 74,
+      "hrm_channel": 4,
+      "hrm_objective": 0.4082239285745776,
+      "timestamp": "2026-05-13T01:46:34.027586"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 80,
+      "hrm_channel": 5,
+      "hrm_objective": 0.4041349533255775,
+      "timestamp": "2026-05-13T01:46:34.051965"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 86,
+      "hrm_channel": 5,
+      "hrm_objective": 0.4012089487684975,
+      "timestamp": "2026-05-13T01:46:34.077813"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 92,
+      "hrm_channel": 5,
+      "hrm_objective": 0.3994101916683602,
+      "timestamp": "2026-05-13T01:46:34.100064"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 98,
+      "hrm_channel": 5,
+      "hrm_objective": 0.3982071461836517,
+      "timestamp": "2026-05-13T01:46:34.123792"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 104,
+      "hrm_channel": 6,
+      "hrm_objective": 0.39610446038760405,
+      "timestamp": "2026-05-13T01:46:34.148285"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 110,
+      "hrm_channel": 6,
+      "hrm_objective": 0.39421120291713785,
+      "timestamp": "2026-05-13T01:46:34.170643"
+    },
+    {
+      "concepts": [
+        "inference",
+        "latency",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 116,
+      "hrm_channel": 6,
+      "hrm_objective": 0.3924944545159293,
+      "timestamp": "2026-05-13T01:46:34.192965"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 1,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4479333415738445,
+      "timestamp": "2026-05-13T01:46:34.223991"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 4,
+      "hrm_channel": 1,
+      "hrm_objective": 0.44061281916636125,
+      "timestamp": "2026-05-13T01:46:34.260695"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 7,
+      "hrm_channel": 1,
+      "hrm_objective": 0.4367418057444877,
+      "timestamp": "2026-05-13T01:46:34.299721"
+    },
+    {
+      "concepts": [
+        "memory",
+        "benchmark"
+      ],
+      "neural_magnitude": 0.0,
+      "relation_count": 10,
+      "hrm_channel": 2,
+      "hrm_objective": 0.42607773988167225,
+      "timestamp": "2026-05-13T01:46:34.324447"
     }
   ],
-  "timestamp": "2026-01-23T05:14:50.318009"
+  "timestamp": "2026-05-13T01:46:34.324732"
 }

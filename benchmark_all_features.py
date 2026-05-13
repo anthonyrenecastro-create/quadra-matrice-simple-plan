@@ -397,7 +397,7 @@ class BenchmarkSuite:
         logger.info("="*80)
         
         try:
-            from quadra.core.symbolic.interpreter import SymbolicPredictiveInterpreter
+            from quadra.core.symbolic.interpreter import StatefulSymbolicPredictiveInterpreter as SymbolicPredictiveInterpreter
             
             interpreter = SymbolicPredictiveInterpreter(
                 input_dim=128,
@@ -510,7 +510,7 @@ class BenchmarkSuite:
                     field = GPUOptimizedField()
                     batch = torch.randn(32, 100)
                     for _ in range(5):
-                        _ = field.encode(batch)
+                        _ = field.encoder(batch.to(field.device))
                 
                 measurements = []
                 for _ in range(10):

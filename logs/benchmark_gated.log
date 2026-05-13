@@ -1,0 +1,20 @@
+[nltk_data] Downloading package punkt to /home/codespace/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package wordnet to
+[nltk_data]     /home/codespace/nltk_data...
+[nltk_data]   Package wordnet is already up-to-date!
+2026-05-13 01:45:56,632 - atlantean_hrm_gpu - WARNING - ⚠️  CUDA not available. Running on CPU.
+2026-05-13 01:45:56,638 - atlantean_hrm_gpu - INFO - 🧠 GPU-Optimized Field initialized on cpu
+2026-05-13 01:45:56,638 - atlantean_hrm_gpu - INFO -    Parameters: 298,048
+2026-05-13 01:45:56,643 - atlantean_hrm_gpu - INFO - ⚡ GPU Oscillator Engine ready
+
+Gated Path Micro-Benchmark
+steps=300 warmup=30 field=64 dt=0.01 stability_hint=0.95
+  engine |     mode |    skip% |    step_ms |   total_ms | save_vs_forced% |      note
+--------------------------------------------------------------------------------------
+     spi |     live |     0.00 |      0.644 |    193.099 |           -6.92 |     gated
+     spi |  low-int |    75.00 |      0.348 |    104.454 |           42.16 |     gated
+     spi |   forced |     0.00 |      0.602 |    180.602 |            0.00 |  baseline
+     gpu |     live |     0.00 |      0.942 |    282.653 |          -49.26 |     gated
+     gpu |  low-int |    75.00 |      0.351 |    105.281 |           44.40 |     gated
+     gpu |   forced |     0.00 |      0.631 |    189.369 |            0.00 |  baseline
