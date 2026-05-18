@@ -30,7 +30,12 @@ See: ../../../DUAL_LANGUAGE_GLOSSARY.md for concept translations
 """
 
 import numpy as np
-from typing import Tuple, Literal, Optional
+from typing import Tuple, Literal, Optional, Dict, Any
+
+try:
+    from .field_nn import FieldUpdateNN
+except ImportError:  # pragma: no cover - direct module execution fallback
+    from field_nn import FieldUpdateNN
 
 
 class FieldEngine:
@@ -104,6 +109,131 @@ class FieldEngine:
         self.gamma = np.ones(10) * 0.1   # Damping
         self.alpha = np.ones(10) * 0.2   # Saturation
         self.beta  = np.ones(10) * 0.05  # Stiffness
+
+        # Free-energy functional controls for projector penalty:
+        # dphi_dt = -δF_IFT/δphi - P(phi)
+        self.free_energy: Dict[str, Any] = {
+            "projector_mode": "high_pass",      # {"none", "high_pass", "mask"}
+            "projector_strength": 0.0,           # λ_P in λ_P * P(phi)
+            "projector_cutoff": 0.35,            # normalized radial cutoff for high-pass
+            "projector_mask": None,              # optional fixed/learned spectral mask
+            "stabilize_with_update_nn": False,   # apply smoothing+variance clip to P(phi)
+            "variance_clip": 0.2,
+        }
+        self._spectral_mask_cache: Optional[np.ndarray] = None
+        self._field_update_nn = FieldUpdateNN(
+            variance_clip=float(self.free_energy["variance_clip"])
+        )
+
+    def set_free_energy_functional(
+        self,
+        *,
+        projector_mode: Optional[str] = None,
+        projector_strength: Optional[float] = None,
+        projector_cutoff: Optional[float] = None,
+        projector_mask: Optional[np.ndarray] = None,
+        stabilize_with_update_nn: Optional[bool] = None,
+        variance_clip: Optional[float] = None,
+    ) -> None:
+        """
+        Update free-energy functional controls for projector regularization.
+
+        This configures the penalty in:
+            ∂phi/∂t = -δF_IFT/δphi - P(phi)
+
+        Args:
+            projector_mode: "none", "high_pass", or "mask".
+            projector_strength: Scalar weight λ_P for projector penalty.
+            projector_cutoff: Normalized radial cutoff in [0, 1] for high-pass.
+            projector_mask: Fixed/learned spectral mask with field shape.
+            stabilize_with_update_nn: If True, smooth+clip P(phi) before penalty.
+            variance_clip: Variance clip used by FieldUpdateNN stabilizer.
+        """
+        if projector_mode is not None:
+            mode = str(projector_mode).lower()
+            if mode not in {"none", "high_pass", "mask"}:
+                raise ValueError("projector_mode must be one of: none, high_pass, mask")
+            self.free_energy["projector_mode"] = mode
+
+        if projector_strength is not None:
+            self.free_energy["projector_strength"] = float(max(0.0, projector_strength))
+
+        if projector_cutoff is not None:
+            self.free_energy["projector_cutoff"] = float(np.clip(projector_cutoff, 0.0, 1.0))
+            self._spectral_mask_cache = None
+
+        if projector_mask is not None:
+            mask = np.asarray(projector_mask, dtype=float)
+            if mask.shape != self.shape:
+                raise ValueError(
+                    f"projector_mask shape {mask.shape} does not match field shape {self.shape}"
+                )
+            self.free_energy["projector_mask"] = mask
+
+        if stabilize_with_update_nn is not None:
+            self.free_energy["stabilize_with_update_nn"] = bool(stabilize_with_update_nn)
+
+        if variance_clip is not None:
+            self.free_energy["variance_clip"] = float(max(0.0, variance_clip))
+            self._field_update_nn = FieldUpdateNN(
+                variance_clip=float(self.free_energy["variance_clip"])
+            )
+
+    def get_free_energy_functional(self) -> Dict[str, Any]:
+        """Return a shallow copy of current free-energy functional controls."""
+        cfg = dict(self.free_energy)
+        if isinstance(cfg.get("projector_mask"), np.ndarray):
+            cfg["projector_mask"] = cfg["projector_mask"].copy()
+        return cfg
+
+    def _build_high_pass_mask(self) -> np.ndarray:
+        """Construct normalized radial high-pass mask in Fourier space."""
+        if self.mode != "2d":
+            return np.ones(self.shape, dtype=float)
+        if self._spectral_mask_cache is not None:
+            return self._spectral_mask_cache
+
+        H, W = self.shape
+        ky = np.fft.fftfreq(H)
+        kx = np.fft.fftfreq(W)
+        ky_grid, kx_grid = np.meshgrid(ky, kx, indexing="ij")
+        radius = np.sqrt(kx_grid**2 + ky_grid**2)
+        max_radius = float(np.max(radius)) + 1e-12
+        radius_norm = radius / max_radius
+        cutoff = float(self.free_energy["projector_cutoff"])
+        mask = (radius_norm >= cutoff).astype(float)
+        self._spectral_mask_cache = mask
+        return mask
+
+    def _apply_projector(self, x: np.ndarray) -> np.ndarray:
+        """
+        Apply spectral projector P to a field.
+
+        - high_pass: project onto undesired high-wavenumber modes
+        - mask: apply fixed/learned spectral mask
+        - none: zero penalty term
+        """
+        mode = self.free_energy["projector_mode"]
+        if mode == "none":
+            return np.zeros_like(x)
+
+        if self.mode == "0d":
+            if mode == "mask" and self.free_energy["projector_mask"] is not None:
+                return np.asarray(self.free_energy["projector_mask"]) * x
+            return x
+
+        x_hat = np.fft.fft2(x)
+        if mode == "mask":
+            mask = self.free_energy["projector_mask"]
+            if mask is None:
+                mask = self._build_high_pass_mask()
+        else:
+            mask = self._build_high_pass_mask()
+        projected = np.fft.ifft2(np.asarray(mask, dtype=float) * x_hat).real
+
+        if self.free_energy["stabilize_with_update_nn"]:
+            projected = self._field_update_nn.update(projected)
+        return projected
         
     @staticmethod
     def _laplacian_2d(x: np.ndarray) -> np.ndarray:
@@ -221,9 +351,18 @@ class FieldEngine:
             
             # Coupling via 12-fold tensor
             coupling = self.eps * self._tensor_coupling(n)
+
+            # Interpret current dynamics as -δF_IFT/δphi
+            variational_term = Fn + coupling
+
+            # Projector penalty: P(phi) in ∂phi/∂t = -δF_IFT/δphi - P(phi)
+            projector_strength = float(self.free_energy["projector_strength"])
+            projector_penalty = projector_strength * self._apply_projector(x)
+
+            dphi_dt = variational_term - projector_penalty
             
             # Forward Euler integration step
-            self.phi[n] = x + dt * (Fn + coupling)
+            self.phi[n] = x + dt * dphi_dt
         
         # Update global potential (low-pass filter of phi_0)
         activity = np.tanh(self.phi[0])  # phi_0 as activity proxy
