@@ -328,9 +328,17 @@ CognitionSim speaks in two tongues—the **poetic language of consciousness** (m
 
 **Start here:** [DUAL_LANGUAGE_QUICK_REF.md](./DUAL_LANGUAGE_QUICK_REF.md) for instant translations
 
+## License
+
+This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](./LICENSE).
+
+For the project's licensing position and community/commercial guidance, see [LICENSE_AND_COMPUTATIONAL_SOVEREIGNTY.md](./LICENSE_AND_COMPUTATIONAL_SOVEREIGNTY.md).
+
 ## Contact
 
-For questions, collaborations, or bug reports:
+For questions, collaborations, or licensing inquiries:
+- Anthony Rene Castro, CEO and Chief A.I. Engineer
+- Website: [axiomzeta-innovations.com](https://axiomzeta-innovations.com)
 - GitHub Issues: [github.com/cognitionsim/cognitionsim/issues](https://github.com/cognitionsim/cognitionsim/issues)
 
 ---

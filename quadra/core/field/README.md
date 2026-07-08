@@ -456,7 +456,9 @@ Field averages are used to modulate three system parameters:
 ## Contact
 
 For questions, contributions, or discussion:
+- Anthony Rene Castro, CEO and Chief A.I. Engineer
+- Website: [axiomzeta-innovations.com](https://axiomzeta-innovations.com)
 - **GitHub Issues:** [cognitionsim/cognitionsim](https://github.com/cognitionsim/cognitionsim/issues)
-- **Documentation:** See `DUAL_LANGUAGE_GLOSSARY.md` for concept translations
+- **Documentation:** See [DUAL_LANGUAGE_GLOSSARY.md](../../../DUAL_LANGUAGE_GLOSSARY.md) for concept translations
 
 ---
